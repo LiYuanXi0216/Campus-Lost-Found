@@ -6,14 +6,14 @@ spring:
     name: Campus-Lost-Found
 
   datasource:
-    # 数据库连接地址
+    # 数据库连接地址 (注意时区我帮你补全为 Asia/Shanghai)
     url: jdbc:mysql://localhost:3306/campus_lost_found?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: root # 你的MySQL本地用户名（通常是root）
-    password: 123456 # 你的MySQL本地密码（请改成你自己的！）
+    username: root
+    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver # 告诉Spring Boot使用MySQL的驱动程序
 
-# MyBatis配置（如果你们持久层用MyBatis的话）
-mybatis:
+# MyBatis-Plus 配置
+mybatis-plus:
   configuration:
-    # 开启驼峰命名自动映射 (将数据库的 user_id 自动映射为 Java 里的 userId)
+    # 开启驼峰命名自动映射（将数据库的 user_id 自动映射为 Java 里的 userId）
     map-underscore-to-camel-case: true
