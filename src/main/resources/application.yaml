@@ -9,7 +9,11 @@ spring:
     # 数据库连接地址 (注意时区我帮你补全为 Asia/Shanghai)
     url: jdbc:mysql://localhost:3306/campus_lost_found?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: root
+<<<<<<< first_function
     password: 123456
+=======
+    password: 1234
+>>>>>>> main
     driver-class-name: com.mysql.cj.jdbc.Driver # 告诉Spring Boot使用MySQL的驱动程序
 
 # MyBatis-Plus 配置
