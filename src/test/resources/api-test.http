@@ -1,0 +1,45 @@
+### 1. 发布一条【寻物启事 - LOST】
+POST http://localhost:8080/api/posts
+Content-Type: application/json
+
+{
+  "type": "LOST",
+  "title": "食堂一楼丢失黑色书包",
+  "description": "里面有一本软件工程教材，求好心人联系",
+  "contact": "微信：lost_123"
+}
+
+### 2. 发布另一条【寻物启事 - LOST】
+POST http://localhost:8080/api/posts
+Content-Type: application/json
+
+{
+  "type": "LOST",
+  "title": "操场丢失校园卡",
+  "description": "卡号是2024xxxx，姓名张三，请捡到的同学联系我",
+  "contact": "手机：13800000001"
+}
+
+### 3. 发布一条【招领启事 - FOUND】
+POST http://localhost:8080/api/posts
+Content-Type: application/json
+
+{
+  "type": "FOUND",
+  "title": "在图书馆二楼捡到一个AirPods",
+  "description": "白色的，带一个小狗保护套，请失主带证明来取",
+  "contact": "QQ：987654321"
+}
+
+### =========================================
+### 下面是查询测试（可以在浏览器中验证，也可以直接在这里点击运行）
+### =========================================
+
+### 4. 浏览所有帖子
+GET http://localhost:8080/api/posts
+
+### 5. 分类浏览：只看【寻物启事 - LOST】
+GET http://localhost:8080/api/posts/type/LOST
+
+### 6. 分类浏览：只看【招领启事 - FOUND】
+GET http://localhost:8080/api/posts/type/FOUND

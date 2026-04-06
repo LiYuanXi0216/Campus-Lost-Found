@@ -28,4 +28,12 @@ public class ItemPostController {
     public List<ItemPost> listAll() {
         return service.getAllPosts();
     }
+
+    // 新增 API 3: 根据类型浏览帖子
+    // 路径会长这样：http://localhost:8080/api/posts/type/LOST
+    @GetMapping("/type/{type}")
+    public List<ItemPost> listByType(@PathVariable String type) {
+        // @PathVariable 会把路径里的 {type} 提取出来传给方法的参数
+        return service.getPostsByType(type);
+    }
 }

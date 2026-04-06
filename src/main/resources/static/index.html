@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>校园失物招领极简版</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { display: flex; gap: 50px; }
+        .form-section, .list-section { border: 1px solid #ccc; padding: 20px; border-radius: 8px; width: 50%; }
+        .post-card { border-bottom: 1px dashed #999; padding: 10px 0; }
+        .type-lost { color: red; font-weight: bold; }
+        .type-found { color: green; font-weight: bold; }
+        input, textarea, select, button { margin-bottom: 10px; display: block; width: 90%; }
+    </style>
+</head>
+<body>
+
+<h2>🔍 校园失物招领智能匹配 (Web简易版)</h2>
+
+<div class="container">
+    <div class="form-section">
+        <h3>📝 发布信息</h3>
+        <label>类型：</label>
+        <select id="postType">
+            <option value="LOST">寻物启事 (我丢了东西)</option>
+            <option value="FOUND">招领启事 (我捡到东西)</option>
+        </select>
+
+        <label>标题：</label>
+        <input type="text" id="postTitle" placeholder="例如：食堂一楼丢失黑色雨伞">
+
+        <label>详情描述：</label>
+        <textarea id="postDesc" rows="4" placeholder="请详细描述物品特征、丢失/捡到地点等"></textarea>
+
+        <label>联系方式：</label>
+        <input type="text" id="postContact" placeholder="微信/QQ/手机号">
+
+        <button onclick="submitPost()">🚀 点击发布</button>
+    </div>
+
+    <div class="list-section">
+        <h3>📋 信息大厅</h3>
+        <div>
+            <button onclick="loadPosts('ALL')">全部信息</button>
+            <button onclick="loadPosts('LOST')">只看寻物</button>
+            <button onclick="loadPosts('FOUND')">只看招领</button>
+        </div>
+
+        <div id="postListContainer">
+            <p>正在加载数据...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 页面加载完成后，自动去后端拉取“全部”数据
+    window.onload = function() {
+        loadPosts('ALL');
+    };
+
+    // 功能1：加载帖子列表 (调用后端的 GET 接口)
+    function loadPosts(type) {
+        let url = 'http://localhost:8080/api/posts';
+        if (type !== 'ALL') {
+            url = 'http://localhost:8080/api/posts/type/' + type;
+        }
+
+        // Fetch API 是浏览器自带的发网络请求的工具
+        fetch(url)
+            .then(response => response.json()) // 把后端返回的数据转成 JSON
+            .then(data => {
+                const container = document.getElementById('postListContainer');
+                container.innerHTML = ''; // 清空之前的内容
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p>暂无数据</p>';
+                    return;
+                }
+
+                // 遍历后端传来的数组，拼接 HTML 显示出来
+                data.forEach(post => {
+                    let typeSpan = post.type === 'LOST'
+                        ? '<span class="type-lost">[寻物]</span>'
+                        : '<span class="type-found">[招领]</span>';
+
+                    container.innerHTML += `
+                            <div class="post-card">
+                                <h4>${typeSpan} ${post.title}</h4>
+                                <p><strong>描述：</strong>${post.description}</p>
+                                <p><strong>联系方式：</strong>${post.contact}</p>
+                                <small style="color: gray;">发布时间：${post.createTime}</small>
+                            </div>
+                        `;
+                });
+            })
+            .catch(error => console.error('加载失败:', error));
+    }
+
+    // 功能2：提交新帖子 (调用后端的 POST 接口)
+    function submitPost() {
+        // 拿到用户在输入框里填写的值
+        const postData = {
+            type: document.getElementById('postType').value,
+            title: document.getElementById('postTitle').value,
+            description: document.getElementById('postDesc').value,
+            contact: document.getElementById('postContact').value
+        };
+
+        fetch('http://localhost:8080/api/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(postData) // 把 JavaScript 对象变成 JSON 字符串发给后端
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert('发布成功！');
+                // 发布成功后，清空输入框
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postDesc').value = '';
+                document.getElementById('postContact').value = '';
+                // 重新加载列表，就能看到刚才发的数据了
+                loadPosts('ALL');
+            })
+            .catch(error => alert('发布失败，请检查后端是否运行'));
+    }
+</script>
+</body>
+</html>
