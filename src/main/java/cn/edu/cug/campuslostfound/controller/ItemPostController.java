@@ -36,4 +36,15 @@ public class ItemPostController {
         // @PathVariable 会把路径里的 {type} 提取出来传给方法的参数
         return service.getPostsByType(type);
     }
+
+    // 新增 API: 综合检索接口
+    // 访问路径类似：http://localhost:8080/api/posts/search?type=LOST&keyword=黑色
+    @GetMapping("/search")
+    public List<ItemPost> search(
+            // @RequestParam 表示从 URL 的问号后面取参数，required = false 表示前端可以不传这个参数
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String keyword) {
+
+        return service.searchPosts(type, keyword);
+    }
 }

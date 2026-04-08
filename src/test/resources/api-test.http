@@ -43,3 +43,60 @@ GET http://localhost:8080/api/posts/type/LOST
 
 ### 6. 分类浏览：只看【招领启事 - FOUND】
 GET http://localhost:8080/api/posts/type/FOUND
+
+
+### =========================================
+### 进阶测试：图片上传与发帖两步走
+### =========================================
+
+### 步骤一：上传图片到服务器
+# 注意：这里我们使用 multipart/form-data 格式，并且需要定义一个边界 (boundary) 来包裹文件
+POST http://localhost:8080/api/files/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.jpg"
+Content-Type: image/jpeg
+
+# 这里的 < 表示读取本地文件，./test.jpg 表示读取当前 http 文件同目录下的 test.jpg
+< ./test.jpg
+--WebAppBoundary--
+
+> {%
+    // 这是一个 IDEA HTTP Client 的小魔法：把后端返回的 imageUrl 和 aiTags 存到临时变量里，方便下一步直接用！
+    client.global.set("tempImageUrl", response.body.imageUrl);
+    client.global.set("tempAiTags", response.body.aiTags);
+%}
+
+
+### 步骤二：利用上一步返回的图片 URL 和 AI 标签，发布完整的帖子
+POST http://localhost:8080/api/posts
+Content-Type: application/json
+
+{
+  "type": "LOST",
+  "title": "图书馆遗失黑色双肩包",
+  "description": "里面有贵重物品。特征描述：{{tempAiTags}}",
+  "contact": "电话：13812345678",
+  "location": "图书馆二楼自习室",
+  "imageUrl": "{{tempImageUrl}}"
+}
+
+### 注册测试
+POST http://localhost:8080/api/users/register
+Content-Type: application/json
+
+{
+  "username": "student001",
+  "password": "my_password_123",
+  "nickname": "软件工程张三"
+}
+
+### 登录测试（输入正确的账号密码）
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "student001",
+  "password": "my_password_123"
+}
