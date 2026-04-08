@@ -76,10 +76,12 @@ Content-Type: application/json
 {
   "type": "LOST",
   "title": "图书馆遗失黑色双肩包",
-  "description": "里面有贵重物品。特征描述：{{tempAiTags}}",
+  "description": "里面有贵重物品。",
   "contact": "电话：13812345678",
   "location": "图书馆二楼自习室",
-  "imageUrl": "{{tempImageUrl}}"
+  "imageUrl": "",
+  "latitude": 30.516611,
+  "longitude": 114.412819
 }
 
 ### 注册测试

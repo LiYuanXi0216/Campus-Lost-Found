@@ -62,6 +62,9 @@
         <div class="form-group">
             <label>发生地点：</label>
             <input type="text" id="postLocation" placeholder="例如：图书馆二楼A区">
+            <small id="locationStatus" style="display:block; margin-top:6px; color:#888;">
+                发布时会尝试自动获取当前设备经纬度，若失败不会影响正常发帖。
+            </small>
         </div>
         <div class="form-group">
             <label>详情描述：</label>
@@ -165,12 +168,15 @@
     // 功能2：异步提交帖子 (重点：处理两步走流程)
     async function submitPost() {
         const btn = document.getElementById('submitBtn');
+        const locationStatus = document.getElementById('locationStatus');
         btn.innerText = '⏳ 发布中...';
         btn.disabled = true;
+        locationStatus.innerText = '正在获取当前位置...';
 
         try {
             let finalImageUrl = "";
             let aiTags = "";
+            const coordinates = await getCurrentCoordinates(); // 获取坐标信息
 
             // 第 1 步：判断用户是否选择了图片，如果选了，先发上传请求
             const fileInput = document.getElementById('postImage');
@@ -210,7 +216,9 @@
                 location: document.getElementById('postLocation').value,
                 description: description,
                 contact: document.getElementById('postContact').value,
-                imageUrl: finalImageUrl // 存入刚上传的图片链接 (如果没有选图片，这里就是空字符串)
+                imageUrl: finalImageUrl, // 存入刚上传的图片链接 (如果没有选图片，这里就是空字符串)
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude
             };
 
             // 第 3 步：发送发帖请求
@@ -222,22 +230,51 @@
 
             if (postRes.ok) {
                 alert('发布成功！');
+                if (coordinates.latitude !== null && coordinates.longitude !== null) {
+                    locationStatus.innerText = '本次发布已附带当前设备经纬度。';
+                } else {
+                    locationStatus.innerText = '本次未获取到设备定位，帖子已正常发布。';
+                }
                 // 清空表单
                 document.querySelectorAll('.form-section input[type="text"], .form-section textarea, .form-section input[type="file"]').forEach(el => el.value = '');
                 // 刷新列表
                 loadPosts('ALL');
             } else {
+                locationStatus.innerText = '发帖失败，请稍后重试。';
                 alert('发布失败，请查看控制台报错');
             }
 
         } catch (error) {
             console.error('流程出错:', error);
+            locationStatus.innerText = '网络请求失败，暂时无法完成发布。';
             alert('网络请求失败，请确保后端服务正在运行');
         } finally {
             // 无论成功失败，恢复按钮状态
             btn.innerText = '🚀 点击发布';
             btn.disabled = false;
         }
+    }
+
+    // 获取用户设备左边信息的函数
+    function getCurrentCoordinates() {
+        if (!navigator.geolocation) {
+            return Promise.resolve({ latitude: null, longitude: null });
+        }
+
+        return new Promise(resolve => {
+            navigator.geolocation.getCurrentPosition(
+                position => resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                }),
+                () => resolve({ latitude: null, longitude: null }),
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        });
     }
 </script>
 </body>

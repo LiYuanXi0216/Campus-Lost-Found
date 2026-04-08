@@ -7,16 +7,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.io.File;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
-
+public class WebConfig implements WebMvcConfigurer
+{
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    public void addResourceHandlers(ResourceHandlerRegistry registry)
+    {
         // 获取当前项目的绝对路径
         String path = System.getProperty("user.dir") + "/uploads/";
 
         // 如果 uploads 文件夹不存在，就自动创建一个
         File uploadDir = new File(path);
-        if (!uploadDir.exists()) {
+        if (!uploadDir.exists())
+        {
             uploadDir.mkdirs();
         }
 

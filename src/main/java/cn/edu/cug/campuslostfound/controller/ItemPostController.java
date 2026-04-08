@@ -1,5 +1,6 @@
 package cn.edu.cug.campuslostfound.controller;
 
+import cn.edu.cug.campuslostfound.dto.ItemPostCreateRequest;
 import cn.edu.cug.campuslostfound.entity.ItemPost;
 import cn.edu.cug.campuslostfound.service.ItemPostService;
 import org.springframework.web.bind.annotation.*;
@@ -8,8 +9,8 @@ import java.util.List;
 @RestController // 标记这是一个返回 JSON 数据的接口类
 @RequestMapping("/api/posts") // 规定这些接口的统一前缀路径
 @CrossOrigin // 简单粗暴地允许前端跨域请求，方便你们前后端本地联调
-public class ItemPostController {
-
+public class ItemPostController
+{
     private final ItemPostService service;
 
     public ItemPostController(ItemPostService service) {
@@ -18,9 +19,9 @@ public class ItemPostController {
 
     // API 1: 发布帖子 (使用 POST 请求)
     @PostMapping
-    public ItemPost create(@RequestBody ItemPost post) {
-        // @RequestBody 会自动把前端传来的 JSON 数据转换成 ItemPost 对象
-        return service.createPost(post);
+    public ItemPost create(@RequestBody ItemPostCreateRequest request) {
+        // @RequestBody 会自动把前端传来的 JSON 数据转换成 ItemPostCreateRequest 对象
+        return service.createPost(request);
     }
 
     // API 2: 浏览所有帖子 (使用 GET 请求)

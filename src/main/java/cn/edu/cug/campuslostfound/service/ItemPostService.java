@@ -1,5 +1,6 @@
 package cn.edu.cug.campuslostfound.service;
 
+import cn.edu.cug.campuslostfound.dto.ItemPostCreateRequest;
 import cn.edu.cug.campuslostfound.entity.ItemPost;
 import cn.edu.cug.campuslostfound.mapper.ItemPostMapper;
 import org.springframework.stereotype.Service;
@@ -18,13 +19,44 @@ public class ItemPostService {
     }
 
     // 业务功能 1：发布帖子
-    public ItemPost createPost(ItemPost post) {
+    public ItemPost createPost(ItemPostCreateRequest request) {
+        ItemPost post = buildPost(request);
         post.setCreateTime(LocalDateTime.now());
         if (post.getItemStatus() == null) {
             post.setItemStatus("PENDING"); // 默认状态为寻找中/招领中
         }
         mapper.insert(post);
         return post;
+    }
+
+    private ItemPost buildPost(ItemPostCreateRequest request) {
+        ItemPost post = new ItemPost();
+        post.setType(request.getType());
+        post.setTitle(request.getTitle());
+        post.setDescription(request.getDescription());
+        post.setContact(request.getContact());
+        post.setLocation(request.getLocation());
+        post.setImageUrl(request.getImageUrl());
+        post.setItemStatus(request.getItemStatus());
+        post.setIncidentTime(request.getIncidentTime());
+        post.setPublisherId(request.getPublisherId());
+        post.setLatitude(normalizeLatitude(request.getLatitude()));
+        post.setLongitude(normalizeLongitude(request.getLongitude()));
+        return post;
+    }
+
+    private Double normalizeLatitude(Double latitude) {
+        if (latitude == null || latitude < -90 || latitude > 90) {
+            return null;
+        }
+        return latitude;
+    }
+
+    private Double normalizeLongitude(Double longitude) {
+        if (longitude == null || longitude < -180 || longitude > 180) {
+            return null;
+        }
+        return longitude;
     }
 
     // 业务功能 2：浏览所有帖子

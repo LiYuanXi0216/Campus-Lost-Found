@@ -12,8 +12,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/files")
 @CrossOrigin
-public class FileUploadController {
-
+public class FileUploadController
+{
     private final AiRecognitionService aiService;
 
     public FileUploadController(AiRecognitionService aiService) {
@@ -21,10 +21,12 @@ public class FileUploadController {
     }
 
     @PostMapping("/upload")
-    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file) {
+    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file)
+    {
         Map<String, Object> result = new HashMap<>();
 
-        if (file.isEmpty()) {
+        if (file.isEmpty())
+        {
             result.put("success", false);
             result.put("message", "请选择要上传的图片");
             return result;
