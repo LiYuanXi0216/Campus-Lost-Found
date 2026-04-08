@@ -2,241 +2,333 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>校园失物招领 V2.0</title>
+    <title>校园失物招领 V3.0</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .header { text-align: center; color: #333; margin-bottom: 30px; }
-        .container { display: flex; gap: 30px; max-width: 1200px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
 
-        /* 表单区域样式 */
-        .form-section { background: white; padding: 25px; border-radius: 10px; width: 40%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: fit-content; }
+        /* 顶部导航栏 */
+        .navbar { background-color: #343a40; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-brand { font-size: 20px; font-weight: bold; }
+        .auth-area { display: flex; gap: 10px; align-items: center; }
+        .auth-input { padding: 5px; border-radius: 3px; border: none; }
+        .btn-sm { padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-login { background-color: #28a745; }
+        .btn-register { background-color: #17a2b8; }
+        .btn-logout { background-color: #dc3545; }
+
+        .container { display: flex; gap: 30px; max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+
+        /* 表单区域 */
+        .form-section { background: white; padding: 25px; border-radius: 10px; width: 35%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: fit-content; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #555; }
         input[type="text"], select, textarea, input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { background-color: #007BFF; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
-        button:hover { background-color: #0056b3; }
+        .btn-main { background-color: #007BFF; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
 
-        /* 列表区域样式 */
-        .list-section { background: white; padding: 25px; border-radius: 10px; width: 60%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .toolbar { display: flex; gap: 10px; margin-bottom: 20px; }
-        .toolbar button { width: auto; padding: 8px 15px; background-color: #6c757d; }
-        .toolbar button:hover { background-color: #5a6268; }
+        /* 列表区域 */
+        .list-section { background: white; padding: 25px; border-radius: 10px; width: 65%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .toolbar button { padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .toolbar input { flex-grow: 1; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
 
-        /* 帖子卡片样式 */
-        .post-card { border: 1px solid #eee; border-left: 5px solid #007BFF; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; gap: 15px; background: #fafafa; }
-        .post-card.found { border-left-color: #28a745; } /* 招领卡片变绿 */
+        /* 帖子卡片 */
+        .post-card { border: 1px solid #eee; border-left: 5px solid #007BFF; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; gap: 15px; background: #fafafa; position: relative; }
+        .post-card.found { border-left-color: #28a745; }
+        .post-img { width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
         .post-info { flex-grow: 1; }
         .post-info h4 { margin: 0 0 10px 0; color: #333; }
-        .post-info p { margin: 5px 0; font-size: 14px; color: #666; }
-        .type-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; color: white; font-weight: bold; margin-right: 10px; }
-        .bg-lost { background-color: #dc3545; }
-        .bg-found { background-color: #28a745; }
-        .post-img { width: 120px; height: 120px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
+        .post-info p { margin: 5px 0; font-size: 13px; color: #666; }
+
+        /* 操作按钮区 (修改/删除) */
+        .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 5px; }
+        .btn-edit { background-color: #ffc107; color: black; padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;}
+        .btn-delete { background-color: #dc3545; color: white; padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;}
+
+        /* 未登录遮罩 */
+        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: #dc3545; z-index: 10; border-radius: 10px; display: none; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2>🔍 校园失物招领智能匹配 (Web V2.0)</h2>
+<div class="navbar">
+    <div class="nav-brand">🏫 校园失物招领</div>
+    <div class="auth-area" id="authArea">
+    </div>
 </div>
 
 <div class="container">
-    <div class="form-section">
+    <div class="form-section" style="position: relative;">
+        <div id="loginOverlay" class="overlay">请先登录后再发帖 🔒</div>
         <h3>📝 发布新信息</h3>
-        <div class="form-group">
-            <label>类型：</label>
-            <select id="postType">
-                <option value="LOST">寻物启事 (我丢了东西)</option>
-                <option value="FOUND">招领启事 (我捡到东西)</option>
-            </select>
+        <div class="form-group"><label>类型：</label>
+            <select id="postType"><option value="LOST">寻物启事</option><option value="FOUND">招领启事</option></select>
         </div>
-        <div class="form-group">
-            <label>标题：</label>
-            <input type="text" id="postTitle" placeholder="例如：食堂一楼丢失黑色雨伞">
-        </div>
-        <div class="form-group">
-            <label>发生时间 (可模糊填写)：</label>
-            <input type="text" id="postIncidentTime" placeholder="例如：昨天下午 / 2026年4月7日">
-        </div>
-        <div class="form-group">
-            <label>发生地点：</label>
-            <input type="text" id="postLocation" placeholder="例如：图书馆二楼A区">
-        </div>
-        <div class="form-group">
-            <label>详情描述：</label>
-            <textarea id="postDesc" rows="3" placeholder="请详细描述物品特征等"></textarea>
-        </div>
-        <div class="form-group">
-            <label>联系方式：</label>
-            <input type="text" id="postContact" placeholder="微信/QQ/手机号">
-        </div>
-        <div class="form-group">
-            <label>上传图片 (选填)：</label>
-            <input type="file" id="postImage" accept="image/*">
-        </div>
-
-        <button id="submitBtn" onclick="submitPost()">🚀 点击发布</button>
+        <div class="form-group"><label>标题：</label><input type="text" id="postTitle"></div>
+        <div class="form-group"><label>发生地点：</label><input type="text" id="postLocation"></div>
+        <div class="form-group"><label>详情描述：</label><textarea id="postDesc" rows="3"></textarea></div>
+        <div class="form-group"><label>联系方式：</label><input type="text" id="postContact"></div>
+        <div class="form-group"><label>图片：</label><input type="file" id="postImage" accept="image/*"></div>
+        <button class="btn-main" id="submitBtn" onclick="submitPost()">🚀 点击发布</button>
     </div>
 
     <div class="list-section">
         <h3>📋 信息大厅</h3>
-
         <div class="toolbar">
             <button onclick="loadPosts('ALL')">全部</button>
-            <button onclick="loadPosts('LOST')" style="background-color: #dc3545;">只看寻物</button>
-            <button onclick="loadPosts('FOUND')" style="background-color: #28a745;">只看招领</button>
-            <input type="text" id="searchInput" placeholder="输入关键词搜索 (标题/描述/地点)...">
-            <button onclick="searchKeyword()" style="background-color: #17a2b8;">🔍 搜索</button>
+            <button onclick="loadPosts('LOST')" style="background-color: #007BFF;">寻物</button>
+            <button onclick="loadPosts('FOUND')" style="background-color: #28a745;">招领</button>
+            <button id="btnMyPosts" onclick="loadMyPosts()" style="background-color: #ffc107; color: black; display: none;">👤 我的帖子</button>
+            <input type="text" id="searchInput" placeholder="搜索关键词...">
+            <button onclick="loadPosts(currentFilterType)" style="background-color: #17a2b8;">🔍</button>
         </div>
-
-        <div id="postListContainer">
-            <p style="text-align: center; color: #888;">正在加载数据...</p>
-        </div>
+        <div id="postListContainer"><p style="text-align: center; color: #888;">正在加载数据...</p></div>
     </div>
 </div>
 
 <script>
-    // 当前选择的分类，默认是 ALL
+    // ==========================================
+    // 1. 全局状态与认证逻辑 (Token 管理)
+    // ==========================================
     let currentFilterType = 'ALL';
 
     window.onload = function() {
+        renderAuthUI();
         loadPosts('ALL');
     };
 
-    // 触发关键词搜索
-    function searchKeyword() {
-        loadPosts(currentFilterType);
+    // 渲染右上角登录区
+    function renderAuthUI() {
+        const authArea = document.getElementById('authArea');
+        const token = localStorage.getItem('token');
+        const nickname = localStorage.getItem('nickname');
+
+        if (token) {
+            // 已登录状态
+            authArea.innerHTML = `
+                    <span>欢迎, <b>${nickname}</b></span>
+                    <button class="btn-sm btn-logout" onclick="logout()">退出登录</button>
+                `;
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('btnMyPosts').style.display = 'inline-block';
+        } else {
+            // 未登录状态
+            authArea.innerHTML = `
+                    <input type="text" id="authUsername" class="auth-input" placeholder="账号">
+                    <input type="password" id="authPassword" class="auth-input" placeholder="密码">
+                    <button class="btn-sm btn-login" onclick="login()">登录</button>
+                    <button class="btn-sm btn-register" onclick="register()">注册</button>
+                `;
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('btnMyPosts').style.display = 'none';
+        }
     }
 
-    // 功能1：加载并渲染帖子列表 (调用后端的 search 接口)
+    async function login() {
+        const u = document.getElementById('authUsername').value;
+        const p = document.getElementById('authPassword').value;
+        if(!u || !p) return alert("请输入账号和密码");
+
+        const res = await fetch('http://localhost:8080/api/users/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (data.success) {
+            // 【核心】将 Token 存入浏览器本地缓存
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('nickname', data.data.nickname);
+            renderAuthUI();
+            alert("登录成功！");
+        } else {
+            alert(data.message);
+        }
+    }
+
+    async function register() {
+        const u = document.getElementById('authUsername').value;
+        const p = document.getElementById('authPassword').value;
+        if(!u || !p) return alert("请输入账号和密码进行注册");
+
+        const res = await fetch('http://localhost:8080/api/users/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("注册成功！请点击登录按钮进行登录。");
+        } else {
+            alert(data.message);
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('nickname');
+        renderAuthUI();
+        loadPosts('ALL'); // 刷新列表，退出个人中心
+    }
+
+    // ==========================================
+    // 2. 帖子业务逻辑 (携带 Token 请求)
+    // ==========================================
+
+    // 封装带有 Token 的 fetch 请求
+    function getAuthHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.getItem('token') || ''
+        };
+    }
+
+    // 加载公开帖子
     function loadPosts(type) {
         currentFilterType = type;
         const keyword = document.getElementById('searchInput').value.trim();
-
-        // 动态拼接 URL 查询参数 (例如: /api/posts/search?type=LOST&keyword=黑色)
-        let url = 'http://localhost:8080/api/posts/search?';
+        let url = `http://localhost:8080/api/posts/search?`;
         if (type !== 'ALL') url += `type=${type}&`;
         if (keyword !== '') url += `keyword=${keyword}`;
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('postListContainer');
-                container.innerHTML = '';
-
-                if (data.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">没有找到相关信息</p>';
-                    return;
-                }
-
-                data.forEach(post => {
-                    // 判断样式
-                    const isLost = post.type === 'LOST';
-                    const badgeClass = isLost ? 'bg-lost' : 'bg-found';
-                    const badgeText = isLost ? '寻物' : '招领';
-                    const cardClass = isLost ? 'post-card' : 'post-card found';
-
-                    // 处理图片展示：如果有图片就显示 <img>，没有就显示一段占位文字
-                    const imageHtml = post.imageUrl
-                        ? `<img src="${post.imageUrl}" class="post-img" alt="物品图片">`
-                        : `<div class="post-img" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px;">暂无图片</div>`;
-
-                    // 容错处理：如果新字段为空，显示“未提供”
-                    const timeStr = post.incidentTime || '未提供';
-                    const locStr = post.location || '未提供';
-
-                    container.innerHTML += `
-                            <div class="${cardClass}">
-                                ${imageHtml}
-                                <div class="post-info">
-                                    <h4><span class="type-badge ${badgeClass}">${badgeText}</span> ${post.title}</h4>
-                                    <p><strong>时间：</strong>${timeStr} &nbsp;|&nbsp; <strong>地点：</strong>${locStr}</p>
-                                    <p><strong>描述：</strong>${post.description}</p>
-                                    <p><strong>联系方式：</strong>${post.contact}</p>
-                                </div>
-                            </div>
-                        `;
-                });
-            })
-            .catch(error => console.error('加载失败:', error));
+        fetch(url).then(res => res.json()).then(data => renderPostList(data, false));
     }
 
-    // 功能2：异步提交帖子 (重点：处理两步走流程)
-    async function submitPost() {
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = '⏳ 发布中...';
-        btn.disabled = true;
+    // 加载我的帖子 (个人中心)
+    async function loadMyPosts() {
+        const res = await fetch('http://localhost:8080/api/posts/my', {
+            headers: { 'Authorization': localStorage.getItem('token') } // 查自己的帖子必须带 Token
+        });
+        if(res.status === 401) return alert("请先登录！");
+        const data = await res.json();
+        renderPostList(data, true); // true 表示处于“我的”视图，需要显示修改删除按钮
+    }
 
+    // 渲染列表 (抽取出来的通用方法)
+    function renderPostList(data, isMyView) {
+        const container = document.getElementById('postListContainer');
+        container.innerHTML = '';
+        if (data.length === 0) return container.innerHTML = '<p style="text-align:center;">暂无数据</p>';
+
+        data.forEach(post => {
+            const isLost = post.type === 'LOST';
+            const imageHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="post-img">` : `<div class="post-img" style="background:#eee; text-align:center; line-height:100px; color:#bbb; font-size:12px;">无图</div>`;
+
+            // 如果处于“我的帖子”视图，则额外生成操作按钮
+            let actionHtml = '';
+            if (isMyView) {
+                actionHtml = `
+                        <div class="action-btns">
+                            <button class="btn-edit" onclick="editPost(${post.id}, '${post.title}', '${post.description}')">✏️ 修改</button>
+                            <button class="btn-delete" onclick="deletePost(${post.id})">🗑️ 删除</button>
+                        </div>
+                    `;
+            }
+
+            container.innerHTML += `
+                    <div class="post-card ${isLost ? '' : 'found'}">
+                        ${imageHtml}
+                        <div class="post-info">
+                            <h4>[${isLost ? '寻物' : '招领'}] ${post.title}</h4>
+                            <p><strong>地点：</strong>${post.location || '未提供'}</p>
+                            <p><strong>描述：</strong>${post.description}</p>
+                            <p><strong>状态：</strong>${post.itemStatus === 'RESOLVED' ? '✅ 已解决' : '⏳ 寻找中'}</p>
+                        </div>
+                        ${actionHtml}
+                    </div>
+                `;
+        });
+    }
+
+    // ==========================================
+    // 3. 增删改核心功能
+    // ==========================================
+
+    async function submitPost() {
+        const token = localStorage.getItem('token');
+        if (!token) return alert("请先登录！");
+
+        document.getElementById('submitBtn').disabled = true;
         try {
             let finalImageUrl = "";
-            let aiTags = "";
-
-            // 第 1 步：判断用户是否选择了图片，如果选了，先发上传请求
             const fileInput = document.getElementById('postImage');
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const formData = new FormData();
-                formData.append('file', file);
 
-                // 等待图片上传完成 (await)
+            // 第一步：传图 (注意：这里也要带 Token，因为我们在后端没有放行 /api/files/upload)
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
                 const uploadRes = await fetch('http://localhost:8080/api/files/upload', {
                     method: 'POST',
+                    headers: { 'Authorization': token }, // 图片上传也要过保安！
                     body: formData
                 });
                 const uploadData = await uploadRes.json();
-
                 if (uploadData.success) {
                     finalImageUrl = uploadData.imageUrl;
-                    aiTags = uploadData.aiTags; // 拿到后端模拟的 AI 标签
-                } else {
-                    alert('图片上传失败：' + uploadData.message);
-                    btn.innerText = '🚀 点击发布';
-                    btn.disabled = false;
-                    return; // 中断发布
+                    document.getElementById('postDesc').value += '\n' + uploadData.aiTags;
                 }
             }
 
-            // 第 2 步：组装帖子数据
-            let description = document.getElementById('postDesc').value;
-            if (aiTags !== "") {
-                description += '\n' + aiTags; // 把 AI 标签拼接到描述的最后
-            }
-
+            // 第二步：发帖
             const postData = {
                 type: document.getElementById('postType').value,
                 title: document.getElementById('postTitle').value,
-                incidentTime: document.getElementById('postIncidentTime').value,
                 location: document.getElementById('postLocation').value,
-                description: description,
+                description: document.getElementById('postDesc').value,
                 contact: document.getElementById('postContact').value,
-                imageUrl: finalImageUrl // 存入刚上传的图片链接 (如果没有选图片，这里就是空字符串)
+                imageUrl: finalImageUrl
             };
 
-            // 第 3 步：发送发帖请求
             const postRes = await fetch('http://localhost:8080/api/posts', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(), // 携带 Token 和 JSON 声明
                 body: JSON.stringify(postData)
             });
 
             if (postRes.ok) {
                 alert('发布成功！');
-                // 清空表单
-                document.querySelectorAll('.form-section input[type="text"], .form-section textarea, .form-section input[type="file"]').forEach(el => el.value = '');
-                // 刷新列表
                 loadPosts('ALL');
             } else {
-                alert('发布失败，请查看控制台报错');
+                alert('发布失败，请检查登录状态');
             }
-
-        } catch (error) {
-            console.error('流程出错:', error);
-            alert('网络请求失败，请确保后端服务正在运行');
         } finally {
-            // 无论成功失败，恢复按钮状态
-            btn.innerText = '🚀 点击发布';
-            btn.disabled = false;
+            document.getElementById('submitBtn').disabled = false;
+        }
+    }
+
+    // 删除帖子
+    async function deletePost(id) {
+        if(!confirm('确定要永久删除这条帖子吗？')) return;
+        const res = await fetch(`http://localhost:8080/api/posts/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if(data.success) {
+            alert('删除成功');
+            loadMyPosts(); // 重新加载我的帖子
+        } else {
+            alert(data.message);
+        }
+    }
+
+    // 修改帖子 (这里为了极简，使用弹窗修改标题和描述)
+    async function editPost(id, oldTitle, oldDesc) {
+        const newTitle = prompt("修改标题：", oldTitle);
+        if(newTitle === null) return; // 用户点了取消
+        const newDesc = prompt("修改描述：", oldDesc);
+        if(newDesc === null) return;
+
+        const res = await fetch(`http://localhost:8080/api/posts/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ title: newTitle, description: newDesc })
+        });
+        const data = await res.json();
+        if(data.success) {
+            alert('修改成功！');
+            loadMyPosts(); // 重新加载
+        } else {
+            alert(data.message);
         }
     }
 </script>

@@ -18,8 +18,9 @@ public class ItemPostService {
     }
 
     // 业务功能 1：发布帖子
-    public ItemPost createPost(ItemPost post) {
+    public ItemPost createPost(ItemPost post, Long userId) {
         post.setCreateTime(LocalDateTime.now());
+        post.setPublisherId(userId.toString()); // 自动识别并绑定发帖人！
         if (post.getItemStatus() == null) {
             post.setItemStatus("PENDING"); // 默认状态为寻找中/招领中
         }
@@ -69,5 +70,55 @@ public class ItemPostService {
         queryWrapper.orderByDesc("create_time");
 
         return mapper.selectList(queryWrapper);
+    }
+
+    // 新增功能 1：查询我发布的帖子
+    public List<ItemPost> getMyPosts(Long userId) {
+        QueryWrapper<ItemPost> queryWrapper = new QueryWrapper<>();
+        // 查询 publisher_id 等于当前登录用户 ID 的帖子
+        queryWrapper.eq("publisher_id", userId.toString());
+        queryWrapper.orderByDesc("create_time");
+        return mapper.selectList(queryWrapper);
+    }
+
+    // 新增功能 2：删除我的帖子
+    public void deleteMyPost(Long postId, Long userId) {
+        // 1. 先查出这个帖子是否存在
+        ItemPost post = mapper.selectById(postId);
+        if (post == null) {
+            throw new RuntimeException("帖子不存在！");
+        }
+
+        // 2. 【核心安全校验】：判断帖子的主人是不是当前用户
+        if (!post.getPublisherId().equals(userId.toString())) {
+            throw new RuntimeException("非法操作：您无权删除别人的帖子！");
+        }
+
+        // 3. 校验通过，执行删除
+        mapper.deleteById(postId);
+    }
+
+    // 新增功能 3：修改我的帖子
+    public ItemPost updateMyPost(Long postId, ItemPost updateData, Long userId) {
+        ItemPost post = mapper.selectById(postId);
+        if (post == null) {
+            throw new RuntimeException("帖子不存在！");
+        }
+
+        if (!post.getPublisherId().equals(userId.toString())) {
+            throw new RuntimeException("非法操作：您无权修改别人的帖子！");
+        }
+
+        // 4. 将前端传来的新数据覆盖旧数据 (这里只允许修改部分字段)
+        if (updateData.getTitle() != null) post.setTitle(updateData.getTitle());
+        if (updateData.getDescription() != null) post.setDescription(updateData.getDescription());
+        if (updateData.getLocation() != null) post.setLocation(updateData.getLocation());
+        if (updateData.getContact() != null) post.setContact(updateData.getContact());
+        if (updateData.getItemStatus() != null) post.setItemStatus(updateData.getItemStatus());
+        if (updateData.getType() != null) post.setType(updateData.getType());
+
+        // 5. 保存回数据库
+        mapper.updateById(post);
+        return post;
     }
 }

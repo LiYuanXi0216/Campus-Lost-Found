@@ -1,26 +1,45 @@
 package cn.edu.cug.campuslostfound.config;
 
+// 这里是所有需要的导包（包括了上次图片上传和这次拦截器的依赖）
+import cn.edu.cug.campuslostfound.interceptor.AuthenticationInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.File;
 
-@Configuration
+@Configuration // 告诉 Spring Boot 这是一个配置类
 public class WebConfig implements WebMvcConfigurer {
 
+    // 注入我们刚刚写的保安（拦截器）
+    @Autowired
+    private AuthenticationInterceptor authInterceptor;
+
+    /**
+     * 功能 1：配置拦截器规则 (本次新增)
+     */
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/users/login", "/api/users/register")
+                // 👇 注意看这行，我把末尾的 "/api/posts" 删掉了！
+                .excludePathPatterns("/api/posts/search", "/api/posts/type/**")
+                .excludePathPatterns("/uploads/**");
+    }
+
+    /**
+     * 功能 2：配置静态资源映射 (之前写的，用于图片上传)
+     */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 获取当前项目的绝对路径
         String path = System.getProperty("user.dir") + "/uploads/";
-
-        // 如果 uploads 文件夹不存在，就自动创建一个
         File uploadDir = new File(path);
         if (!uploadDir.exists()) {
             uploadDir.mkdirs();
         }
-
-        // 核心：把网址 /uploads/** 映射到硬盘的 uploads 文件夹
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + path);
     }

@@ -100,3 +100,61 @@ Content-Type: application/json
   "username": "student001",
   "password": "my_password_123"
 }
+
+### 1. 先登录获取 Token
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "student001",
+  "password": "my_password_123"
+}
+
+> {%
+    // 自动保存登录后的 token
+    client.global.set("my_token", response.body.token);
+%}
+
+### 2. 发帖（现在必须带上 Authorization 头）
+POST http://localhost:8080/api/posts
+Authorization: {{my_token}}
+Content-Type: application/json
+
+{
+  "title": "测试自动绑定用户ID",
+  "description": "这是我登录后发的帖子",
+  "type": "LOST"
+}
+
+### =========================================
+### 个人中心功能测试 (需携带 Token)
+### =========================================
+
+### 1. 查询我发布的帖子
+GET http://localhost:8080/api/posts/my
+Authorization: {{my_token}}
+
+### -> 仔细看返回的结果，找到你刚才发的那个帖子的 "id" 值（假设是 5），接下来的测试我们要用到这个 ID！
+
+### 2. 修改我的帖子 (把 URL 里的 5 换成你真实的帖子 ID)
+PUT http://localhost:8080/api/posts/13
+Authorization: {{my_token}}
+Content-Type: application/json
+
+{
+  "title": "【已修改】我的黑色书包",
+  "description": "这是我刚才修改的帖子内容，补充一些细节...",
+  "itemStatus": "RESOLVED"
+}
+
+### 3. 删除我的帖子 (把 URL 里的 5 换成你真实的帖子 ID)
+DELETE http://localhost:8080/api/posts/13
+Authorization: {{my_token}}
+
+
+### 4. 【高级安全测试】越权删除别人帖子的测试！
+### 你可以在数据库里随便找一个不是你当前用户发布的帖子 ID (比如 ID为 1 的那条老数据)，填在下面试试看：
+DELETE http://localhost:8080/api/posts/10
+Authorization: {{my_token}}
+
+### -> 如果一切正常，你应该会看到： "success": false, "message": "非法操作：您无权删除别人的帖子！"

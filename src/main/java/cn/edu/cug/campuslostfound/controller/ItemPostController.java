@@ -2,8 +2,12 @@ package cn.edu.cug.campuslostfound.controller;
 
 import cn.edu.cug.campuslostfound.entity.ItemPost;
 import cn.edu.cug.campuslostfound.service.ItemPostService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController // 标记这是一个返回 JSON 数据的接口类
 @RequestMapping("/api/posts") // 规定这些接口的统一前缀路径
@@ -18,9 +22,11 @@ public class ItemPostController {
 
     // API 1: 发布帖子 (使用 POST 请求)
     @PostMapping
-    public ItemPost create(@RequestBody ItemPost post) {
+    public ItemPost create(@RequestBody ItemPost post, HttpServletRequest request) {
+        // 从请求中取出保安存入的 ID
+        Long userId = (Long) request.getAttribute("currentUserId");
         // @RequestBody 会自动把前端传来的 JSON 数据转换成 ItemPost 对象
-        return service.createPost(post);
+        return service.createPost(post, userId);
     }
 
     // API 2: 浏览所有帖子 (使用 GET 请求)
@@ -46,5 +52,46 @@ public class ItemPostController {
             @RequestParam(required = false) String keyword) {
 
         return service.searchPosts(type, keyword);
+    }
+
+    // API: 获取我发布的帖子 (GET 请求)
+    @GetMapping("/my")
+    public List<ItemPost> getMyPosts(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+        return service.getMyPosts(userId);
+    }
+
+    // API: 修改我的帖子 (PUT 请求是修改的行业标准)
+    // 路径例如：PUT /api/posts/5
+    @PutMapping("/{id}")
+    public Map<String, Object> updateMyPost(@PathVariable Long id, @RequestBody ItemPost post, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Long userId = (Long) request.getAttribute("currentUserId");
+            ItemPost updatedPost = service.updateMyPost(id, post, userId);
+            result.put("success", true);
+            result.put("data", updatedPost);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    // API: 删除我的帖子 (DELETE 请求)
+    // 路径例如：DELETE /api/posts/5
+    @DeleteMapping("/{id}")
+    public Map<String, Object> deleteMyPost(@PathVariable Long id, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Long userId = (Long) request.getAttribute("currentUserId");
+            service.deleteMyPost(id, userId);
+            result.put("success", true);
+            result.put("message", "删除成功");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
     }
 }
