@@ -2,93 +2,159 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>校园失物招领极简版</title>
+    <title>校园失物招领 V2.0</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { display: flex; gap: 50px; }
-        .form-section, .list-section { border: 1px solid #ccc; padding: 20px; border-radius: 8px; width: 50%; }
-        .post-card { border-bottom: 1px dashed #999; padding: 10px 0; }
-        .type-lost { color: red; font-weight: bold; }
-        .type-found { color: green; font-weight: bold; }
-        input, textarea, select, button { margin-bottom: 10px; display: block; width: 90%; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .header { text-align: center; color: #333; margin-bottom: 30px; }
+        .container { display: flex; gap: 30px; max-width: 1200px; margin: 0 auto; }
+
+        /* 表单区域样式 */
+        .form-section { background: white; padding: 25px; border-radius: 10px; width: 40%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: fit-content; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #555; }
+        input[type="text"], select, textarea, input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #007BFF; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #0056b3; }
+
+        /* 列表区域样式 */
+        .list-section { background: white; padding: 25px; border-radius: 10px; width: 60%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .toolbar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .toolbar button { width: auto; padding: 8px 15px; background-color: #6c757d; }
+        .toolbar button:hover { background-color: #5a6268; }
+        .toolbar input { flex-grow: 1; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+
+        /* 帖子卡片样式 */
+        .post-card { border: 1px solid #eee; border-left: 5px solid #007BFF; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; gap: 15px; background: #fafafa; }
+        .post-card.found { border-left-color: #28a745; } /* 招领卡片变绿 */
+        .post-info { flex-grow: 1; }
+        .post-info h4 { margin: 0 0 10px 0; color: #333; }
+        .post-info p { margin: 5px 0; font-size: 14px; color: #666; }
+        .type-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; color: white; font-weight: bold; margin-right: 10px; }
+        .bg-lost { background-color: #dc3545; }
+        .bg-found { background-color: #28a745; }
+        .post-img { width: 120px; height: 120px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
-<h2>🔍 校园失物招领智能匹配 (Web简易版)</h2>
+<div class="header">
+    <h2>🔍 校园失物招领智能匹配 (Web V2.0)</h2>
+</div>
 
 <div class="container">
     <div class="form-section">
-        <h3>📝 发布信息</h3>
-        <label>类型：</label>
-        <select id="postType">
-            <option value="LOST">寻物启事 (我丢了东西)</option>
-            <option value="FOUND">招领启事 (我捡到东西)</option>
-        </select>
+        <h3>📝 发布新信息</h3>
+        <div class="form-group">
+            <label>类型：</label>
+            <select id="postType">
+                <option value="LOST">寻物启事 (我丢了东西)</option>
+                <option value="FOUND">招领启事 (我捡到东西)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>标题：</label>
+            <input type="text" id="postTitle" placeholder="例如：食堂一楼丢失黑色雨伞">
+        </div>
+        <div class="form-group">
+            <label>发生时间 (可模糊填写)：</label>
+            <input type="text" id="postIncidentTime" placeholder="例如：昨天下午 / 2026年4月7日">
+        </div>
+        <div class="form-group">
+            <label>发生地点：</label>
+            <input type="text" id="postLocation" placeholder="例如：图书馆二楼A区">
+        </div>
+        <div class="form-group">
+            <label>详情描述：</label>
+            <textarea id="postDesc" rows="3" placeholder="请详细描述物品特征等"></textarea>
+        </div>
+        <div class="form-group">
+            <label>联系方式：</label>
+            <input type="text" id="postContact" placeholder="微信/QQ/手机号">
+        </div>
+        <div class="form-group">
+            <label>上传图片 (选填)：</label>
+            <input type="file" id="postImage" accept="image/*">
+        </div>
 
-        <label>标题：</label>
-        <input type="text" id="postTitle" placeholder="例如：食堂一楼丢失黑色雨伞">
-
-        <label>详情描述：</label>
-        <textarea id="postDesc" rows="4" placeholder="请详细描述物品特征、丢失/捡到地点等"></textarea>
-
-        <label>联系方式：</label>
-        <input type="text" id="postContact" placeholder="微信/QQ/手机号">
-
-        <button onclick="submitPost()">🚀 点击发布</button>
+        <button id="submitBtn" onclick="submitPost()">🚀 点击发布</button>
     </div>
 
     <div class="list-section">
         <h3>📋 信息大厅</h3>
-        <div>
-            <button onclick="loadPosts('ALL')">全部信息</button>
-            <button onclick="loadPosts('LOST')">只看寻物</button>
-            <button onclick="loadPosts('FOUND')">只看招领</button>
+
+        <div class="toolbar">
+            <button onclick="loadPosts('ALL')">全部</button>
+            <button onclick="loadPosts('LOST')" style="background-color: #dc3545;">只看寻物</button>
+            <button onclick="loadPosts('FOUND')" style="background-color: #28a745;">只看招领</button>
+            <input type="text" id="searchInput" placeholder="输入关键词搜索 (标题/描述/地点)...">
+            <button onclick="searchKeyword()" style="background-color: #17a2b8;">🔍 搜索</button>
         </div>
 
         <div id="postListContainer">
-            <p>正在加载数据...</p>
+            <p style="text-align: center; color: #888;">正在加载数据...</p>
         </div>
     </div>
 </div>
 
 <script>
-    // 页面加载完成后，自动去后端拉取“全部”数据
+    // 当前选择的分类，默认是 ALL
+    let currentFilterType = 'ALL';
+
     window.onload = function() {
         loadPosts('ALL');
     };
 
-    // 功能1：加载帖子列表 (调用后端的 GET 接口)
-    function loadPosts(type) {
-        let url = 'http://localhost:8080/api/posts';
-        if (type !== 'ALL') {
-            url = 'http://localhost:8080/api/posts/type/' + type;
-        }
+    // 触发关键词搜索
+    function searchKeyword() {
+        loadPosts(currentFilterType);
+    }
 
-        // Fetch API 是浏览器自带的发网络请求的工具
+    // 功能1：加载并渲染帖子列表 (调用后端的 search 接口)
+    function loadPosts(type) {
+        currentFilterType = type;
+        const keyword = document.getElementById('searchInput').value.trim();
+
+        // 动态拼接 URL 查询参数 (例如: /api/posts/search?type=LOST&keyword=黑色)
+        let url = 'http://localhost:8080/api/posts/search?';
+        if (type !== 'ALL') url += `type=${type}&`;
+        if (keyword !== '') url += `keyword=${keyword}`;
+
         fetch(url)
-            .then(response => response.json()) // 把后端返回的数据转成 JSON
+            .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('postListContainer');
-                container.innerHTML = ''; // 清空之前的内容
+                container.innerHTML = '';
 
                 if (data.length === 0) {
-                    container.innerHTML = '<p>暂无数据</p>';
+                    container.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">没有找到相关信息</p>';
                     return;
                 }
 
-                // 遍历后端传来的数组，拼接 HTML 显示出来
                 data.forEach(post => {
-                    let typeSpan = post.type === 'LOST'
-                        ? '<span class="type-lost">[寻物]</span>'
-                        : '<span class="type-found">[招领]</span>';
+                    // 判断样式
+                    const isLost = post.type === 'LOST';
+                    const badgeClass = isLost ? 'bg-lost' : 'bg-found';
+                    const badgeText = isLost ? '寻物' : '招领';
+                    const cardClass = isLost ? 'post-card' : 'post-card found';
+
+                    // 处理图片展示：如果有图片就显示 <img>，没有就显示一段占位文字
+                    const imageHtml = post.imageUrl
+                        ? `<img src="${post.imageUrl}" class="post-img" alt="物品图片">`
+                        : `<div class="post-img" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#bbb; font-size:12px;">暂无图片</div>`;
+
+                    // 容错处理：如果新字段为空，显示“未提供”
+                    const timeStr = post.incidentTime || '未提供';
+                    const locStr = post.location || '未提供';
 
                     container.innerHTML += `
-                            <div class="post-card">
-                                <h4>${typeSpan} ${post.title}</h4>
-                                <p><strong>描述：</strong>${post.description}</p>
-                                <p><strong>联系方式：</strong>${post.contact}</p>
-                                <small style="color: gray;">发布时间：${post.createTime}</small>
+                            <div class="${cardClass}">
+                                ${imageHtml}
+                                <div class="post-info">
+                                    <h4><span class="type-badge ${badgeClass}">${badgeText}</span> ${post.title}</h4>
+                                    <p><strong>时间：</strong>${timeStr} &nbsp;|&nbsp; <strong>地点：</strong>${locStr}</p>
+                                    <p><strong>描述：</strong>${post.description}</p>
+                                    <p><strong>联系方式：</strong>${post.contact}</p>
+                                </div>
                             </div>
                         `;
                 });
@@ -96,32 +162,82 @@
             .catch(error => console.error('加载失败:', error));
     }
 
-    // 功能2：提交新帖子 (调用后端的 POST 接口)
-    function submitPost() {
-        // 拿到用户在输入框里填写的值
-        const postData = {
-            type: document.getElementById('postType').value,
-            title: document.getElementById('postTitle').value,
-            description: document.getElementById('postDesc').value,
-            contact: document.getElementById('postContact').value
-        };
+    // 功能2：异步提交帖子 (重点：处理两步走流程)
+    async function submitPost() {
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = '⏳ 发布中...';
+        btn.disabled = true;
 
-        fetch('http://localhost:8080/api/posts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(postData) // 把 JavaScript 对象变成 JSON 字符串发给后端
-        })
-            .then(response => response.json())
-            .then(data => {
+        try {
+            let finalImageUrl = "";
+            let aiTags = "";
+
+            // 第 1 步：判断用户是否选择了图片，如果选了，先发上传请求
+            const fileInput = document.getElementById('postImage');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // 等待图片上传完成 (await)
+                const uploadRes = await fetch('http://localhost:8080/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+
+                if (uploadData.success) {
+                    finalImageUrl = uploadData.imageUrl;
+                    aiTags = uploadData.aiTags; // 拿到后端模拟的 AI 标签
+                } else {
+                    alert('图片上传失败：' + uploadData.message);
+                    btn.innerText = '🚀 点击发布';
+                    btn.disabled = false;
+                    return; // 中断发布
+                }
+            }
+
+            // 第 2 步：组装帖子数据
+            let description = document.getElementById('postDesc').value;
+            if (aiTags !== "") {
+                description += '\n' + aiTags; // 把 AI 标签拼接到描述的最后
+            }
+
+            const postData = {
+                type: document.getElementById('postType').value,
+                title: document.getElementById('postTitle').value,
+                incidentTime: document.getElementById('postIncidentTime').value,
+                location: document.getElementById('postLocation').value,
+                description: description,
+                contact: document.getElementById('postContact').value,
+                imageUrl: finalImageUrl // 存入刚上传的图片链接 (如果没有选图片，这里就是空字符串)
+            };
+
+            // 第 3 步：发送发帖请求
+            const postRes = await fetch('http://localhost:8080/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(postData)
+            });
+
+            if (postRes.ok) {
                 alert('发布成功！');
-                // 发布成功后，清空输入框
-                document.getElementById('postTitle').value = '';
-                document.getElementById('postDesc').value = '';
-                document.getElementById('postContact').value = '';
-                // 重新加载列表，就能看到刚才发的数据了
+                // 清空表单
+                document.querySelectorAll('.form-section input[type="text"], .form-section textarea, .form-section input[type="file"]').forEach(el => el.value = '');
+                // 刷新列表
                 loadPosts('ALL');
-            })
-            .catch(error => alert('发布失败，请检查后端是否运行'));
+            } else {
+                alert('发布失败，请查看控制台报错');
+            }
+
+        } catch (error) {
+            console.error('流程出错:', error);
+            alert('网络请求失败，请确保后端服务正在运行');
+        } finally {
+            // 无论成功失败，恢复按钮状态
+            btn.innerText = '🚀 点击发布';
+            btn.disabled = false;
+        }
     }
 </script>
 </body>

@@ -12,6 +12,11 @@ spring:
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver # 告诉Spring Boot使用MySQL的驱动程序
 
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 单个文件最大允许 10MB
+      max-request-size: 50MB   # 整个请求（可能包含多个文件）最大允许 50MB
+
 # MyBatis-Plus 配置
 mybatis-plus:
   configuration:
