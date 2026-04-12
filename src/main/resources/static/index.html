@@ -2,334 +2,528 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>校园失物招领 V3.0</title>
+    <title>校园失物招领系统 V3.0</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        /* ================= 基础与布局样式 ================= */
+        :root { --primary: #007BFF; --success: #28a745; --danger: #dc3545; --bg: #f4f7f6; --text: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; color: var(--text); }
+        .hidden { display: none !important; }
 
-        /* 顶部导航栏 */
-        .navbar { background-color: #343a40; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-brand { font-size: 20px; font-weight: bold; }
-        .auth-area { display: flex; gap: 10px; align-items: center; }
-        .auth-input { padding: 5px; border-radius: 3px; border: none; }
-        .btn-sm { padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-login { background-color: #28a745; }
-        .btn-register { background-color: #17a2b8; }
-        .btn-logout { background-color: #dc3545; }
+        /* 导航栏 */
+        .navbar { background: white; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .nav-brand { font-size: 20px; font-weight: bold; color: var(--primary); }
+        .nav-tabs button { background: none; border: none; font-size: 16px; padding: 10px 15px; cursor: pointer; color: #555; margin-right: 5px; }
+        .nav-tabs button.active { color: var(--primary); border-bottom: 2px solid var(--primary); font-weight: bold; }
+        .nav-auth button { padding: 8px 15px; border-radius: 5px; cursor: pointer; border: none; }
+        .btn-login { background: var(--primary); color: white; }
+        .btn-logout { background: #eee; color: #333; }
 
-        .container { display: flex; gap: 30px; max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        /* 主内容区 */
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .section-view { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 500px; }
 
-        /* 表单区域 */
-        .form-section { background: white; padding: 25px; border-radius: 10px; width: 35%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: fit-content; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #555; }
-        input[type="text"], select, textarea, input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .btn-main { background-color: #007BFF; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        /* 按钮与表单 */
+        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn { padding: 10px 15px; border-radius: 5px; cursor: pointer; border: none; color: white; font-weight: bold; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
 
-        /* 列表区域 */
-        .list-section { background: white; padding: 25px; border-radius: 10px; width: 65%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .toolbar button { padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .toolbar input { flex-grow: 1; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+        /* 帖子卡片样式 */
+        .post-card { border: 1px solid #eee; padding: 15px; margin-bottom: 15px; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; gap: 15px; }
+        .post-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .post-img { width: 100px; height: 100px; object-fit: cover; border-radius: 5px; background: #eee; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; color: white; }
 
-        /* 帖子卡片 */
-        .post-card { border: 1px solid #eee; border-left: 5px solid #007BFF; padding: 15px; margin-bottom: 15px; border-radius: 5px; display: flex; gap: 15px; background: #fafafa; position: relative; }
-        .post-card.found { border-left-color: #28a745; }
-        .post-img { width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
-        .post-info { flex-grow: 1; }
-        .post-info h4 { margin: 0 0 10px 0; color: #333; }
-        .post-info p { margin: 5px 0; font-size: 13px; color: #666; }
+        /* 个人中心特殊样式 */
+        .profile-header { display: flex; align-items: center; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: #eee; }
+        .stat-cards { display: flex; gap: 20px; margin-bottom: 20px; }
+        .stat-card { flex: 1; background: var(--bg); padding: 20px; text-align: center; border-radius: 8px; }
 
-        /* 操作按钮区 (修改/删除) */
-        .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 5px; }
-        .btn-edit { background-color: #ffc107; color: black; padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;}
-        .btn-delete { background-color: #dc3545; color: white; padding: 5px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;}
-
-        /* 未登录遮罩 */
-        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: #dc3545; z-index: 10; border-radius: 10px; display: none; }
+        /* 弹窗样式 (模态框) */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 999; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal-close { float: right; cursor: pointer; font-size: 20px; font-weight: bold; color: #888; }
     </style>
 </head>
 <body>
 
-<div class="navbar">
-    <div class="nav-brand">🏫 校园失物招领</div>
-    <div class="auth-area" id="authArea">
+<nav class="navbar">
+    <div class="nav-brand">Campus Lost & Found</div>
+    <div class="nav-tabs">
+        <button id="tab-home" class="active" onclick="switchTab('home')">首页大厅</button>
+        <button id="tab-profile" class="hidden" onclick="switchTab('profile')">个人中心</button>
+        <button id="tab-admin" class="hidden" onclick="switchTab('admin')">管理员看板</button>
+    </div>
+    <div class="nav-auth" id="auth-area">
+    </div>
+</nav>
+
+<div class="container">
+
+    <section id="view-home" class="section-view">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h2 style="margin: 0;">📋 信息大厅</h2>
+            <button class="btn btn-primary" onclick="checkAuthAndOpenPostModal()">+ 发布新信息</button>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="searchInput" placeholder="搜索关键词..." style="margin: 0; flex-grow: 1;">
+            <select id="filterType" style="margin: 0; width: 150px;">
+                <option value="ALL">全部类型</option>
+                <option value="LOST">寻物启事</option>
+                <option value="FOUND">招领启事</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadAllPosts()">搜索</button>
+        </div>
+        <div id="allPostsContainer">加载中...</div>
+    </section>
+
+    <section id="view-profile" class="section-view hidden">
+        <div class="profile-header">
+            <img id="myAvatar" class="profile-avatar" src="" alt="头像">
+            <div>
+                <h2 id="myName" style="margin: 0 0 5px 0;">加载中...</h2>
+                <p id="myEmail" style="margin: 0; color: #666; font-size: 14px;"></p>
+            </div>
+        </div>
+        <div class="stat-cards">
+            <div class="stat-card"><h3>发布总数</h3><h2 id="statPost" style="color: var(--primary);">0</h2></div>
+            <div class="stat-card"><h3>我的评论</h3><h2 style="color: #999;">开发中</h2></div>
+            <div class="stat-card"><h3>我的订阅</h3><h2 style="color: #999;">开发中</h2></div>
+        </div>
+        <h3>📝 我发布的帖子</h3>
+        <div id="myPostsContainer">加载中...</div>
+    </section>
+
+    <section id="view-admin" class="section-view hidden">
+        <h2>🛡️ 管理员控制台</h2>
+        <p>欢迎进入系统后台。这里未来将展示全站数据统计和违规帖子审核列表。</p>
+        <div class="stat-cards">
+            <div class="stat-card"><h3>今日活跃度</h3><h2>158</h2></div>
+            <div class="stat-card"><h3>待审核帖子</h3><h2 style="color: var(--danger);">12</h2></div>
+        </div>
+    </section>
+
+</div>
+
+<div id="authModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('authModal')">&times;</span>
+        <h2 id="authModalTitle">用户登录</h2>
+        <input type="text" id="authUsername" placeholder="账号">
+        <input type="password" id="authPassword" placeholder="密码">
+
+        <div id="registerFields" class="hidden">
+            <input type="email" id="authEmail" placeholder="邮箱">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="authCode" placeholder="验证码">
+                <button class="btn btn-success" style="width: 150px; margin-top: 8px;" onclick="sendCode()">获取验证码</button>
+            </div>
+            <input type="text" id="authNickname" placeholder="昵称">
+        </div>
+
+        <button class="btn btn-primary" id="authActionBtn" onclick="doLogin()">立即登录</button>
+        <p style="text-align: center; margin-top: 15px; cursor: pointer; color: var(--primary);" onclick="toggleAuthMode()">切换到注册/登录</p>
     </div>
 </div>
 
-<div class="container">
-    <div class="form-section" style="position: relative;">
-        <div id="loginOverlay" class="overlay">请先登录后再发帖 🔒</div>
-        <h3>📝 发布新信息</h3>
-        <div class="form-group"><label>类型：</label>
-            <select id="postType"><option value="LOST">寻物启事</option><option value="FOUND">招领启事</option></select>
-        </div>
-        <div class="form-group"><label>标题：</label><input type="text" id="postTitle"></div>
-        <div class="form-group"><label>发生地点：</label><input type="text" id="postLocation"></div>
-        <div class="form-group"><label>详情描述：</label><textarea id="postDesc" rows="3"></textarea></div>
-        <div class="form-group"><label>联系方式：</label><input type="text" id="postContact"></div>
-        <div class="form-group"><label>图片：</label><input type="file" id="postImage" accept="image/*"></div>
-        <button class="btn-main" id="submitBtn" onclick="submitPost()">🚀 点击发布</button>
-    </div>
+<div id="postModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('postModal')">&times;</span>
+        <h2 id="postModalTitle">发布新信息</h2>
+        <input type="hidden" id="editPostId">
 
-    <div class="list-section">
-        <h3>📋 信息大厅</h3>
-        <div class="toolbar">
-            <button onclick="loadPosts('ALL')">全部</button>
-            <button onclick="loadPosts('LOST')" style="background-color: #007BFF;">寻物</button>
-            <button onclick="loadPosts('FOUND')" style="background-color: #28a745;">招领</button>
-            <button id="btnMyPosts" onclick="loadMyPosts()" style="background-color: #ffc107; color: black; display: none;">👤 我的帖子</button>
-            <input type="text" id="searchInput" placeholder="搜索关键词...">
-            <button onclick="loadPosts(currentFilterType)" style="background-color: #17a2b8;">🔍</button>
+        <select id="postType"><option value="LOST">寻物启事</option><option value="FOUND">招领启事</option></select>
+        <input type="text" id="postTitle" placeholder="标题">
+        <input type="text" id="postIncidentTime" placeholder="发生时间 (例如: 昨天下午)">
+        <input type="hidden" id="postLat">
+        <input type="hidden" id="postLng">
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="postLocation" placeholder="发生地点 (可手动输入或自动定位)" style="margin-bottom: 0;">
+            <button class="btn btn-success" style="white-space: nowrap; width: auto;" onclick="autoGetLocation()" id="locationBtn">📍 自动定位</button>
         </div>
-        <div id="postListContainer"><p style="text-align: center; color: #888;">正在加载数据...</p></div>
+        <textarea id="postDesc" rows="3" placeholder="详细描述..."></textarea>
+        <input type="text" id="postContact" placeholder="联系方式">
+        <input type="file" id="postImage" accept="image/*">
+        <button class="btn btn-primary" onclick="submitPost()">🚀 保存提交</button>
+    </div>
+</div>
+
+<div id="detailModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('detailModal')">&times;</span>
+        <h2 id="detailTitle" style="margin-top: 0;"></h2>
+        <img id="detailImg" src="" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 5px; display: none;">
+        <p><strong>类型：</strong><span id="detailType" class="badge"></span></p>
+        <p><strong>时间：</strong><span id="detailTime"></span> | <strong>地点：</strong><span id="detailLoc"></span></p>
+        <p><strong>联系方式：</strong><span id="detailContact" style="color: var(--danger); font-weight: bold;"></span></p>
+        <p style="white-space: pre-wrap; background: #f9f9f9; padding: 10px; border-radius: 5px;" id="detailDesc"></p>
     </div>
 </div>
 
 <script>
-    // ==========================================
-    // 1. 全局状态与认证逻辑 (Token 管理)
-    // ==========================================
-    let currentFilterType = 'ALL';
+    const API_BASE = 'http://localhost:8080/api';
+    let isRegisterMode = false;
 
+    // --- 初始化 ---
     window.onload = function() {
-        renderAuthUI();
-        loadPosts('ALL');
+        updateNavbarAuth();
+        loadAllPosts();
     };
 
-    // 渲染右上角登录区
-    function renderAuthUI() {
-        const authArea = document.getElementById('authArea');
-        const token = localStorage.getItem('token');
-        const nickname = localStorage.getItem('nickname');
+    // --- 核心鉴权工具 ---
+    function getToken() { return localStorage.getItem('token'); }
+    function getUser() { return JSON.parse(localStorage.getItem('user')); }
+    function getHeaders() {
+        return { 'Content-Type': 'application/json', 'Authorization': getToken() || '' };
+    }
 
-        if (token) {
-            // 已登录状态
-            authArea.innerHTML = `
-                    <span>欢迎, <b>${nickname}</b></span>
-                    <button class="btn-sm btn-logout" onclick="logout()">退出登录</button>
-                `;
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('btnMyPosts').style.display = 'inline-block';
+    // --- 导航与视图切换 ---
+    function updateNavbarAuth() {
+        const authArea = document.getElementById('auth-area');
+        const user = getUser();
+
+        if (user && getToken()) {
+            authArea.innerHTML = `<span style="margin-right: 15px;">你好, ${user.nickname}</span><button class="btn-logout" onclick="doLogout()">退出登录</button>`;
+            document.getElementById('tab-profile').classList.remove('hidden');
+            if (user.role === 'ADMIN') document.getElementById('tab-admin').classList.remove('hidden');
         } else {
-            // 未登录状态
-            authArea.innerHTML = `
-                    <input type="text" id="authUsername" class="auth-input" placeholder="账号">
-                    <input type="password" id="authPassword" class="auth-input" placeholder="密码">
-                    <button class="btn-sm btn-login" onclick="login()">登录</button>
-                    <button class="btn-sm btn-register" onclick="register()">注册</button>
-                `;
-            document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('btnMyPosts').style.display = 'none';
+            authArea.innerHTML = `<button class="btn-login" onclick="openModal('authModal')">登录 / 注册</button>`;
+            document.getElementById('tab-profile').classList.add('hidden');
+            document.getElementById('tab-admin').classList.add('hidden');
+            switchTab('home'); // 未登录强制回到首页
         }
     }
 
-    async function login() {
-        const u = document.getElementById('authUsername').value;
-        const p = document.getElementById('authPassword').value;
-        if(!u || !p) return alert("请输入账号和密码");
+    function switchTab(viewId) {
+        document.querySelectorAll('.section-view').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-tabs button').forEach(el => el.classList.remove('active'));
 
-        const res = await fetch('http://localhost:8080/api/users/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, password: p })
-        });
-        const data = await res.json();
-        if (data.success) {
-            // 【核心】将 Token 存入浏览器本地缓存
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('nickname', data.data.nickname);
-            renderAuthUI();
-            alert("登录成功！");
-        } else {
-            alert(data.message);
-        }
+        document.getElementById('view-' + viewId).classList.remove('hidden');
+        document.getElementById('tab-' + viewId).classList.add('active');
+
+        if (viewId === 'home') loadAllPosts();
+        if (viewId === 'profile') loadMyProfile();
     }
 
-    async function register() {
-        const u = document.getElementById('authUsername').value;
-        const p = document.getElementById('authPassword').value;
-        if(!u || !p) return alert("请输入账号和密码进行注册");
+    // --- 弹窗控制 ---
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        const res = await fetch('http://localhost:8080/api/users/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, password: p })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert("注册成功！请点击登录按钮进行登录。");
-        } else {
-            alert(data.message);
-        }
+    // --- 登录/注册模块 ---
+    function toggleAuthMode() {
+        isRegisterMode = !isRegisterMode;
+        document.getElementById('authModalTitle').innerText = isRegisterMode ? '账号注册' : '账号登录';
+        document.getElementById('authActionBtn').innerText = isRegisterMode ? '立即注册' : '立即登录';
+        document.getElementById('authActionBtn').setAttribute('onclick', isRegisterMode ? 'doRegister()' : 'doLogin()');
+        document.getElementById('registerFields').classList.toggle('hidden', !isRegisterMode);
     }
 
-    function logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('nickname');
-        renderAuthUI();
-        loadPosts('ALL'); // 刷新列表，退出个人中心
-    }
-
-    // ==========================================
-    // 2. 帖子业务逻辑 (携带 Token 请求)
-    // ==========================================
-
-    // 封装带有 Token 的 fetch 请求
-    function getAuthHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': localStorage.getItem('token') || ''
+    async function doLogin() {
+        const payload = {
+            username: document.getElementById('authUsername').value,
+            password: document.getElementById('authPassword').value
         };
+        try {
+            const res = await fetch(`${API_BASE}/users/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.data));
+                updateNavbarAuth();
+                closeModal('authModal');
+                alert('登录成功！');
+            } else { alert(data.message); }
+        } catch (e) { alert('网络错误'); }
     }
 
-    // 加载公开帖子
-    function loadPosts(type) {
-        currentFilterType = type;
-        const keyword = document.getElementById('searchInput').value.trim();
-        let url = `http://localhost:8080/api/posts/search?`;
+    async function doRegister() {
+        const payload = {
+            username: document.getElementById('authUsername').value,
+            password: document.getElementById('authPassword').value,
+            email: document.getElementById('authEmail').value,
+            code: document.getElementById('authCode').value,
+            nickname: document.getElementById('authNickname').value
+        };
+        try {
+            const res = await fetch(`${API_BASE}/users/register`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (data.success) {
+                alert('注册成功，请直接登录！');
+                toggleAuthMode(); // 切回登录面板
+            } else { alert(data.message); }
+        } catch (e) { alert('网络错误'); }
+    }
+
+    async function sendCode() {
+        const email = document.getElementById('authEmail').value;
+        if(!email) return alert('请先填写邮箱');
+        try {
+            const res = await fetch(`${API_BASE}/users/send-code`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email}) });
+            const data = await res.json();
+            alert(data.message);
+        } catch (e) { alert('请求发送失败'); }
+    }
+
+    function doLogout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        updateNavbarAuth();
+    }
+
+    // --- 核心业务：帖子展示与详情 ---
+    async function loadAllPosts() {
+        const type = document.getElementById('filterType').value;
+        const keyword = document.getElementById('searchInput').value;
+        let url = `${API_BASE}/posts/search?`;
         if (type !== 'ALL') url += `type=${type}&`;
-        if (keyword !== '') url += `keyword=${keyword}`;
+        if (keyword) url += `keyword=${keyword}`;
 
-        fetch(url).then(res => res.json()).then(data => renderPostList(data, false));
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            renderPostList(data, 'allPostsContainer', false);
+        } catch (e) { document.getElementById('allPostsContainer').innerText = '加载失败'; }
     }
 
-    // 加载我的帖子 (个人中心)
-    async function loadMyPosts() {
-        const res = await fetch('http://localhost:8080/api/posts/my', {
-            headers: { 'Authorization': localStorage.getItem('token') } // 查自己的帖子必须带 Token
-        });
-        if(res.status === 401) return alert("请先登录！");
-        const data = await res.json();
-        renderPostList(data, true); // true 表示处于“我的”视图，需要显示修改删除按钮
-    }
-
-    // 渲染列表 (抽取出来的通用方法)
-    function renderPostList(data, isMyView) {
-        const container = document.getElementById('postListContainer');
+    function renderPostList(posts, containerId, isMyPosts) {
+        const container = document.getElementById(containerId);
         container.innerHTML = '';
-        if (data.length === 0) return container.innerHTML = '<p style="text-align:center;">暂无数据</p>';
+        if (!posts || posts.length === 0) return container.innerHTML = '<p style="color:#888; text-align:center;">暂无数据</p>';
 
-        data.forEach(post => {
+        posts.forEach(post => {
             const isLost = post.type === 'LOST';
-            const imageHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="post-img">` : `<div class="post-img" style="background:#eee; text-align:center; line-height:100px; color:#bbb; font-size:12px;">无图</div>`;
+            const badgeColor = isLost ? 'var(--danger)' : 'var(--success)';
+            const badgeText = isLost ? '寻物' : '招领';
+            const imgSrc = post.imageUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=='; // 默认灰图
 
-            // 如果处于“我的帖子”视图，则额外生成操作按钮
-            let actionHtml = '';
-            if (isMyView) {
-                actionHtml = `
-                        <div class="action-btns">
-                            <button class="btn-edit" onclick="editPost(${post.id}, '${post.title}', '${post.description}')">✏️ 修改</button>
-                            <button class="btn-delete" onclick="deletePost(${post.id})">🗑️ 删除</button>
+            // 如果是“我的帖子”，加上编辑和删除按钮
+            let actionBtns = '';
+            if (isMyPosts) {
+                actionBtns = `
+                        <div style="margin-top: 10px; display: flex; gap: 10px;">
+                            <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;" onclick="event.stopPropagation(); openEditModal(${post.id})">编辑</button>
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="event.stopPropagation(); deletePost(${post.id})">删除</button>
                         </div>
                     `;
             }
 
+            // 重点：点击整个卡片，调用查看详情方法
+            // 将数据转为 JSON 字符串存入属性，避免引号冲突
+            const postJsonStr = encodeURIComponent(JSON.stringify(post));
+
             container.innerHTML += `
-                    <div class="post-card ${isLost ? '' : 'found'}">
-                        ${imageHtml}
-                        <div class="post-info">
-                            <h4>[${isLost ? '寻物' : '招领'}] ${post.title}</h4>
-                            <p><strong>地点：</strong>${post.location || '未提供'}</p>
-                            <p><strong>描述：</strong>${post.description}</p>
-                            <p><strong>状态：</strong>${post.itemStatus === 'RESOLVED' ? '✅ 已解决' : '⏳ 寻找中'}</p>
+                    <div class="post-card" onclick="showPostDetail('${postJsonStr}')">
+                        <img src="${imgSrc}" class="post-img">
+                        <div style="flex-grow: 1;">
+                            <h3 style="margin: 0 0 8px 0;"><span class="badge" style="background:${badgeColor}">${badgeText}</span> ${post.title}</h3>
+                            <p style="margin: 5px 0; color: #666; font-size: 14px;">📍 ${post.location || '未知'} | ⏰ ${post.incidentTime || '未知'}</p>
+                            ${actionBtns}
                         </div>
-                        ${actionHtml}
                     </div>
                 `;
         });
     }
 
-    // ==========================================
-    // 3. 增删改核心功能
-    // ==========================================
+    function showPostDetail(encodedPostStr) {
+        const post = JSON.parse(decodeURIComponent(encodedPostStr));
+
+        document.getElementById('detailTitle').innerText = post.title;
+        const typeBadge = document.getElementById('detailType');
+        typeBadge.innerText = post.type === 'LOST' ? '寻物启事' : '招领启事';
+        typeBadge.style.background = post.type === 'LOST' ? 'var(--danger)' : 'var(--success)';
+
+        document.getElementById('detailTime').innerText = post.incidentTime || '未提供';
+        document.getElementById('detailLoc').innerText = post.location || '未提供';
+        document.getElementById('detailDesc').innerText = post.description || '无详细描述';
+
+        // 登录了才给看联系方式，做个小小的权限控制诱导登录
+        if (getToken()) {
+            document.getElementById('detailContact').innerText = post.contact || '未留联系方式';
+        } else {
+            document.getElementById('detailContact').innerHTML = `<a href="javascript:openModal('authModal')">登录后查看</a>`;
+        }
+
+        const imgEl = document.getElementById('detailImg');
+        if (post.imageUrl) { imgEl.src = post.imageUrl; imgEl.style.display = 'block'; }
+        else { imgEl.style.display = 'none'; }
+
+        openModal('detailModal');
+    }
+
+    // --- 个人中心业务 ---
+    async function loadMyProfile() {
+        try {
+            // 1. 加载大盘数据
+            const pRes = await fetch(`${API_BASE}/users/profile`, { headers: getHeaders() });
+            const pData = await pRes.json();
+            if (pData.success) {
+                const info = pData.data.userInfo;
+                document.getElementById('myAvatar').src = info.avatar;
+                document.getElementById('myName').innerText = info.nickname;
+                document.getElementById('myEmail').innerText = info.email || '未绑定邮箱';
+                document.getElementById('statPost').innerText = pData.data.stats.postCount;
+            }
+
+            // 2. 加载我的帖子列表
+            const lRes = await fetch(`${API_BASE}/posts/my`, { headers: getHeaders() });
+            const lData = await lRes.json();
+            renderPostList(lData, 'myPostsContainer', true);
+
+        } catch (e) { alert('加载个人信息失败'); }
+    }
+
+    async function deletePost(id) {
+        if(!confirm('确定要删除这条帖子吗？')) return;
+        try {
+            const res = await fetch(`${API_BASE}/posts/${id}`, { method: 'DELETE', headers: getHeaders() });
+            const data = await res.json();
+            if (data.success) { alert('删除成功'); loadMyProfile(); loadAllPosts(); }
+            else alert(data.message);
+        } catch (e) { alert('删除失败'); }
+    }
+
+    // --- 发帖与编辑综合逻辑 ---
+    function checkAuthAndOpenPostModal() {
+        if (!getToken()) return openModal('authModal');
+        document.getElementById('postModalTitle').innerText = '发布新信息';
+        document.getElementById('editPostId').value = ''; // 清空隐藏ID
+        // 清空表单
+        ['postTitle', 'postIncidentTime', 'postLocation', 'postDesc', 'postContact', 'postImage'].forEach(id => document.getElementById(id).value = '');
+        openModal('postModal');
+    }
+
+    async function openEditModal(id) {
+        // 先尝试从后端拿最新数据 (这里偷懒直接用之前的全局变量，正规做法是根据ID再查一次接口)
+        // 为了保证准确性，这里简写直接让用户自己填新数据。
+        document.getElementById('postModalTitle').innerText = '修改帖子信息';
+        document.getElementById('editPostId').value = id;
+        alert('修改模式：未填写的字段将保持原样（图片暂不支持修改）');
+        openModal('postModal');
+    }
+
+    // --- 硬件与地理 API 逻辑 ---
+    async function autoGetLocation() {
+        const btn = document.getElementById('locationBtn');
+        const locInput = document.getElementById('postLocation');
+
+        if (!navigator.geolocation) {
+            alert('您的浏览器不支持地理定位功能！');
+            return;
+        }
+
+        btn.innerText = '⏳ 定位中...';
+        btn.disabled = true;
+
+        // 调用设备硬件获取经纬度
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            // 将精确坐标存入隐藏输入框，准备发给后端
+            document.getElementById('postLat').value = lat;
+            document.getElementById('postLng').value = lng;
+
+            try {
+                // 【核心】调用 OpenStreetMap 免费地理 API 进行“逆地理编码”
+                // 作用：把 (30.52, 114.31) 变成 "湖北省武汉市洪山区鲁磨路"
+                const geoApiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+
+                const response = await fetch(geoApiUrl, {
+                    headers: { 'Accept-Language': 'zh-CN' } // 要求返回中文地址
+                });
+
+                const data = await response.json();
+
+                if (data && data.display_name) {
+                    // 提取 API 返回的地址，并填入输入框
+                    // 可以根据需要截取 address 里的特定字段，比如 data.address.road
+                    locInput.value = data.display_name;
+                } else {
+                    locInput.value = `经度:${lng.toFixed(4)}, 纬度:${lat.toFixed(4)}`;
+                }
+            } catch (e) {
+                console.error("地理 API 请求失败:", e);
+                locInput.value = `经度:${lng.toFixed(4)}, 纬度:${lat.toFixed(4)} (地名解析失败)`;
+            } finally {
+                btn.innerText = '📍 自动定位';
+                btn.disabled = false;
+            }
+
+        }, (error) => {
+            // 处理用户拒绝授权或定位失败的情况
+            console.warn("定位错误: ", error);
+            alert('定位失败：请确保您的设备开启了定位，并允许浏览器获取位置权限。');
+            btn.innerText = '📍 自动定位';
+            btn.disabled = false;
+        }, {
+            enableHighAccuracy: true, // 要求高精度定位
+            timeout: 10000            // 10秒超时
+        });
+    }
 
     async function submitPost() {
-        const token = localStorage.getItem('token');
-        if (!token) return alert("请先登录！");
+        const editId = document.getElementById('editPostId').value;
+        let finalImageUrl = "";
+        let aiTags = "";
 
-        document.getElementById('submitBtn').disabled = true;
-        try {
-            let finalImageUrl = "";
-            const fileInput = document.getElementById('postImage');
+        // 1. 如果有图片，先上传
+        const fileInput = document.getElementById('postImage');
+        if (fileInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
 
-            // 第一步：传图 (注意：这里也要带 Token，因为我们在后端没有放行 /api/files/upload)
-            if (fileInput.files.length > 0) {
-                const formData = new FormData();
-                formData.append('file', fileInput.files[0]);
-                const uploadRes = await fetch('http://localhost:8080/api/files/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': token }, // 图片上传也要过保安！
-                    body: formData
-                });
-                const uploadData = await uploadRes.json();
-                if (uploadData.success) {
-                    finalImageUrl = uploadData.imageUrl;
-                    document.getElementById('postDesc').value += '\n' + uploadData.aiTags;
-                }
-            }
-
-            // 第二步：发帖
-            const postData = {
-                type: document.getElementById('postType').value,
-                title: document.getElementById('postTitle').value,
-                location: document.getElementById('postLocation').value,
-                description: document.getElementById('postDesc').value,
-                contact: document.getElementById('postContact').value,
-                imageUrl: finalImageUrl
-            };
-
-            const postRes = await fetch('http://localhost:8080/api/posts', {
+            // ================= 核心修改 =================
+            const uploadRes = await fetch(`${API_BASE}/files/upload`, {
                 method: 'POST',
-                headers: getAuthHeaders(), // 携带 Token 和 JSON 声明
-                body: JSON.stringify(postData)
+                // 💡 这里只手动带上 Token，千万不要带 Content-Type！让浏览器自己去处理文件流格式
+                headers: { 'Authorization': getToken() || '' },
+                body: formData
             });
+            // ============================================
 
-            if (postRes.ok) {
-                alert('发布成功！');
-                loadPosts('ALL');
+            const uploadData = await uploadRes.json();
+            if (uploadData.success) {
+                finalImageUrl = uploadData.imageUrl;
+                aiTags = uploadData.aiTags;
             } else {
-                alert('发布失败，请检查登录状态');
+                alert('图片上传失败：' + uploadData.message);
+                return; // 如果上传失败，直接中断发帖
             }
-        } finally {
-            document.getElementById('submitBtn').disabled = false;
         }
-    }
 
-    // 删除帖子
-    async function deletePost(id) {
-        if(!confirm('确定要永久删除这条帖子吗？')) return;
-        const res = await fetch(`http://localhost:8080/api/posts/${id}`, {
-            method: 'DELETE',
-            headers: getAuthHeaders()
-        });
-        const data = await res.json();
-        if(data.success) {
-            alert('删除成功');
-            loadMyPosts(); // 重新加载我的帖子
-        } else {
-            alert(data.message);
-        }
-    }
+        let description = document.getElementById('postDesc').value;
+        if (aiTags) description += '\n' + aiTags;
 
-    // 修改帖子 (这里为了极简，使用弹窗修改标题和描述)
-    async function editPost(id, oldTitle, oldDesc) {
-        const newTitle = prompt("修改标题：", oldTitle);
-        if(newTitle === null) return; // 用户点了取消
-        const newDesc = prompt("修改描述：", oldDesc);
-        if(newDesc === null) return;
+        const postData = {
+            type: document.getElementById('postType').value,
+            title: document.getElementById('postTitle').value,
+            incidentTime: document.getElementById('postIncidentTime').value,
+            location: document.getElementById('postLocation').value,
+            description: description,
+            contact: document.getElementById('postContact').value,
+            // ======== 新增：读取隐藏的经纬度发给后端 ========
+            latitude: document.getElementById('postLat').value ? parseFloat(document.getElementById('postLat').value) : null,
+            longitude: document.getElementById('postLng').value ? parseFloat(document.getElementById('postLng').value) : null
+            // ===============================================
+        };
+        if(finalImageUrl) postData.imageUrl = finalImageUrl;
 
-        const res = await fetch(`http://localhost:8080/api/posts/${id}`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ title: newTitle, description: newDesc })
-        });
-        const data = await res.json();
-        if(data.success) {
-            alert('修改成功！');
-            loadMyPosts(); // 重新加载
-        } else {
-            alert(data.message);
-        }
+        // 2. 判断是新增还是修改
+        const method = editId ? 'PUT' : 'POST';
+        const url = editId ? `${API_BASE}/posts/${editId}` : `${API_BASE}/posts`;
+
+        try {
+            const res = await fetch(url, { method: method, headers: getHeaders(), body: JSON.stringify(postData) });
+            if (res.ok || (await res.json()).success) {
+                alert('操作成功！');
+                closeModal('postModal');
+                loadAllPosts();
+                if(document.getElementById('view-profile').className !== 'hidden') loadMyProfile();
+            } else { alert('操作失败'); }
+        } catch (e) { alert('网络请求异常'); }
     }
 </script>
 </body>

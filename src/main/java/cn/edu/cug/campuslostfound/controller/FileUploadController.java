@@ -44,8 +44,15 @@ public class FileUploadController {
             // 假设你的后端运行在 localhost:8080
             String imageUrl = "http://localhost:8080/uploads/" + newFileName;
 
-            // 4. 调用（模拟的）AI 服务提取图片标签
-            String aiTags = aiService.analyzeImageTags(savePath);
+            // 4. 调用 AI 服务提取图片标签
+            String aiTags = "";
+            try {
+                // 确保你传入的是绝对路径 savePath
+                aiTags = aiService.analyzeImageTags(savePath);
+            } catch (Exception e) {
+                // 即使 AI 识别报错或超时，也不要中断整个流程
+                System.err.println("AI识别失败，跳过该步骤：" + e.getMessage());
+            }
 
             // 5. 将结果打包返回给前端
             result.put("success", true);

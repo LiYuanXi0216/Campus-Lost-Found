@@ -116,6 +116,7 @@ public class ItemPostService {
         if (updateData.getContact() != null) post.setContact(updateData.getContact());
         if (updateData.getItemStatus() != null) post.setItemStatus(updateData.getItemStatus());
         if (updateData.getType() != null) post.setType(updateData.getType());
+        if (updateData.getImageUrl() != null) post.setImageUrl(updateData.getImageUrl());
 
         // 5. 保存回数据库
         mapper.updateById(post);
