@@ -3,8 +3,13 @@ package cn.edu.cug.campuslostfound.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import cn.edu.cug.campuslostfound.entity.User;
 import cn.edu.cug.campuslostfound.mapper.UserMapper;
+import cn.edu.cug.campuslostfound.entity.ItemPost;
+import cn.edu.cug.campuslostfound.mapper.ItemPostMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -12,11 +17,13 @@ public class UserService {
     private final UserMapper userMapper;
     // 💡 核心修改 1：在这里声明 EmailService
     private final EmailService emailService;
+    private final ItemPostMapper itemPostMapper;
 
-    // 💡 核心修改 2：在构造函数中把 EmailService 注入进来
-    public UserService(UserMapper userMapper, EmailService emailService) {
+    // 💡 核心修改：在构造函数中同时注入这三个依赖
+    public UserService(UserMapper userMapper, EmailService emailService, ItemPostMapper itemPostMapper) {
         this.userMapper = userMapper;
         this.emailService = emailService;
+        this.itemPostMapper = itemPostMapper;
     }
 
     // 功能 1：用户注册 (带邮箱验证码功能)
@@ -81,5 +88,37 @@ public class UserService {
         // 登录成功，同样清空密码后再返回给前端
         user.setPassword(null);
         return user;
+    }
+
+    public Map<String, Object> getUserProfile(Long userId) {
+        // 1. 获取用户信息
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        user.setPassword(null); // 安全起见清空密码
+
+        // 💡 自动生成随机头像 (如果数据库没有)
+        if (user.getAvatar() == null || user.getAvatar().isEmpty()) {
+            user.setAvatar("https://api.dicebear.com/7.x/pixel-art/svg?seed=" + user.getUsername());
+        }
+
+        // 2. 统计我发布的帖子数量
+        QueryWrapper<ItemPost> postWrapper = new QueryWrapper<>();
+        postWrapper.eq("publisher_id", userId.toString());
+        long postCount = itemPostMapper.selectCount(postWrapper);
+
+        // 3. 封装返回结果
+        Map<String, Object> profile = new HashMap<>();
+        profile.put("userInfo", user);
+
+        // 预留统计模块：目前只有 postCount 是真实的
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("postCount", postCount);
+        stats.put("commentCount", 0);      // 预留未来评论数
+        stats.put("subscriptionCount", 0); // 预留未来订阅数
+        profile.put("stats", stats);
+
+        return profile;
     }
 }

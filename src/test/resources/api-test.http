@@ -227,3 +227,20 @@ Authorization: {{user_token}}
 ### 4. 管理员访问管理员看板 (应该返回 200 OK，并看到我们写的假数据)
 GET http://localhost:8080/api/admin/dashboard/stats
 Authorization: {{admin_token}}
+
+
+### 1. 先登录，获取你的 Token (如果你之前的 Token 还没过期，这步可省略)
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "student001",
+  "password": "my_password_123"
+}
+> {% client.global.set("my_token", response.body.token); %}
+
+### -----------------------------------------
+
+### 2. 获取个人中心聚合数据
+GET http://localhost:8080/api/users/profile
+Authorization: {{my_token}}

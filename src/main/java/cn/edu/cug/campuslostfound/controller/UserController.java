@@ -81,4 +81,23 @@ public class UserController {
         }
         return result;
     }
+
+    @GetMapping("/profile")
+    public Map<String, Object> getProfile(jakarta.servlet.http.HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            // 通过之前的拦截器拿到当前用户ID
+            Long userId = (Long) request.getAttribute("currentUserId");
+
+            // 调用聚合服务
+            Map<String, Object> data = userService.getUserProfile(userId);
+
+            result.put("success", true);
+            result.put("data", data);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
 }

@@ -20,6 +20,7 @@ public class User {
     private String username;
     private String password;
     private String nickname;
+    private String avatar; // 用户头像的 URL
     private String role; // "USER" 或 "ADMIN"
     private String email; // 用户的邮箱地址
 
