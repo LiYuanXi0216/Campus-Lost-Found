@@ -4,24 +4,44 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import cn.edu.cug.campuslostfound.entity.User;
 import cn.edu.cug.campuslostfound.mapper.UserMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils; // Spring自带的加密工具
+import org.springframework.util.DigestUtils;
 
 @Service
 public class UserService {
 
     private final UserMapper userMapper;
+    // 💡 核心修改 1：在这里声明 EmailService
+    private final EmailService emailService;
 
-    public UserService(UserMapper userMapper) {
+    // 💡 核心修改 2：在构造函数中把 EmailService 注入进来
+    public UserService(UserMapper userMapper, EmailService emailService) {
         this.userMapper = userMapper;
+        this.emailService = emailService;
     }
 
-    // 功能 1：用户注册
+    // 功能 1：用户注册 (带邮箱验证码功能)
     public User register(User user) {
+
+        // ================= 核心修改 3：第一步先拦截并校验验证码 =================
+        // 确保前端传了邮箱和验证码，并且调用 emailService 验证通过
+        if (user.getEmail() == null || user.getCode() == null ||
+                !emailService.verifyCode(user.getEmail(), user.getCode())) {
+            throw new RuntimeException("验证码错误或已过期，请重新获取！");
+        }
+        // ====================================================================
+
         // 1. 检查账号是否已经存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", user.getUsername());
         if (userMapper.selectCount(queryWrapper) > 0) {
             throw new RuntimeException("该账号已被注册！");
+        }
+
+        // 💡 额外优化：检查这个邮箱是不是已经被别人注册过了
+        QueryWrapper<User> emailQuery = new QueryWrapper<>();
+        emailQuery.eq("email", user.getEmail());
+        if (userMapper.selectCount(emailQuery) > 0) {
+            throw new RuntimeException("该邮箱已经被注册过了！");
         }
 
         // 2. 密码加密 (MD5) -> 即使数据库被盗，黑客也看不到原密码
@@ -42,7 +62,7 @@ public class UserService {
         return user;
     }
 
-    // 功能 2：用户登录
+    // 功能 2：用户登录 (保持不变)
     public User login(String username, String password) {
         // 1. 把用户传进来的明文密码，用同样的规则加密
         String md5Password = DigestUtils.md5DigestAsHex(password.getBytes());

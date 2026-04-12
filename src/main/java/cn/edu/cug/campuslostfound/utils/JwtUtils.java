@@ -17,10 +17,11 @@ public class JwtUtils {
      * 制造手环：生成 Token
      * 我们把用户的 ID 和 Username 存进手环里
      */
-    public static String generateToken(Long userId, String username) {
+    public static String generateToken(Long userId, String username, String role) {
         return Jwts.builder()
                 .claim("userId", userId)       // 存入用户ID
                 .claim("username", username)   // 存入用户名
+                .claim("role", role)  // ！！！把角色也存进手环！！！
                 .setIssuedAt(new Date())       // 签发时间
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 过期时间
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY) // 使用 HS256 算法和秘钥签名

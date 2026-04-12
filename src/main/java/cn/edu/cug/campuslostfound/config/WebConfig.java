@@ -1,6 +1,6 @@
 package cn.edu.cug.campuslostfound.config;
 
-// 这里是所有需要的导包（包括了上次图片上传和这次拦截器的依赖）
+import cn.edu.cug.campuslostfound.interceptor.AdminInterceptor;
 import cn.edu.cug.campuslostfound.interceptor.AuthenticationInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -16,18 +16,26 @@ public class WebConfig implements WebMvcConfigurer {
     // 注入我们刚刚写的保安（拦截器）
     @Autowired
     private AuthenticationInterceptor authInterceptor;
+    @Autowired
+    private AdminInterceptor adminInterceptor;
 
     /**
      * 功能 1：配置拦截器规则 (本次新增)
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 1. 普通大门保安 (原来的代码保持不变)
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/users/login", "/api/users/register")
-                // 👇 注意看这行，我把末尾的 "/api/posts" 删掉了！
+                .excludePathPatterns("/api/users/login", "/api/users/register", "/api/users/send-code")
+                .excludePathPatterns("/api/admin/**") // ！！把 admin 的路径从普通保安这里排除，交给内场保安管！！
                 .excludePathPatterns("/api/posts/search", "/api/posts/type/**")
                 .excludePathPatterns("/uploads/**");
+
+        // 2. VIP 内场保安 (新增代码)
+        // 他只负责拦截 /api/admin 开头的所有请求
+        registry.addInterceptor(adminInterceptor)
+                .addPathPatterns("/api/admin/**");
     }
 
     /**

@@ -1,8 +1,10 @@
 package cn.edu.cug.campuslostfound.controller;
 
 import cn.edu.cug.campuslostfound.entity.User;
+import cn.edu.cug.campuslostfound.service.EmailService;
 import cn.edu.cug.campuslostfound.service.UserService;
 import cn.edu.cug.campuslostfound.utils.JwtUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -14,6 +16,8 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    @Autowired
+    private EmailService emailService;
 
     public UserController(UserService userService) {
         this.userService = userService;
@@ -44,7 +48,7 @@ public class UserController {
 
             // ================= 新增代码 =================
             // 登录成功，生成 Token 令牌！
-            String token = JwtUtils.generateToken(loginUser.getId(), loginUser.getUsername());
+            String token = JwtUtils.generateToken(loginUser.getId(), loginUser.getUsername(), loginUser.getRole());
 
             result.put("success", true);
             result.put("data", loginUser);
@@ -54,6 +58,26 @@ public class UserController {
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    // 新增：请求发送验证码接口
+    // 这里因为只需接收一个邮箱，就不用特意建个实体类了，用 Map 接收一下即可
+    @PostMapping("/send-code")
+    public Map<String, Object> sendCode(@RequestBody Map<String, String> params) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String email = params.get("email");
+            if (email == null || email.isEmpty()) {
+                throw new RuntimeException("邮箱不能为空");
+            }
+            emailService.sendVerificationCode(email);
+            result.put("success", true);
+            result.put("message", "验证码发送成功");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "发送失败: " + e.getMessage());
         }
         return result;
     }

@@ -33,7 +33,7 @@ public class ItemPostService {
         return mapper.selectList(null); // 传 null 表示查询所有，没有条件
     }
 
-    // 新增业务功能 3：根据类型（LOST 或 FOUND）分类浏览帖子
+    // 业务功能 3：根据类型（LOST 或 FOUND）分类浏览帖子
     public List<ItemPost> getPostsByType(String type) {
         // 创建一个条件构造器
         QueryWrapper<ItemPost> queryWrapper = new QueryWrapper<>();
@@ -44,7 +44,7 @@ public class ItemPostService {
         return mapper.selectList(queryWrapper);
     }
 
-    // 核心升级功能：综合检索 (支持按类型过滤 + 关键词模糊匹配)
+    // 业务功能4：综合检索 (支持按类型过滤 + 关键词模糊匹配)
     public List<ItemPost> searchPosts(String type, String keyword) {
         QueryWrapper<ItemPost> queryWrapper = new QueryWrapper<>();
 
@@ -72,7 +72,7 @@ public class ItemPostService {
         return mapper.selectList(queryWrapper);
     }
 
-    // 新增功能 1：查询我发布的帖子
+    // 业务功能 5：查询我发布的帖子
     public List<ItemPost> getMyPosts(Long userId) {
         QueryWrapper<ItemPost> queryWrapper = new QueryWrapper<>();
         // 查询 publisher_id 等于当前登录用户 ID 的帖子
@@ -81,7 +81,7 @@ public class ItemPostService {
         return mapper.selectList(queryWrapper);
     }
 
-    // 新增功能 2：删除我的帖子
+    // 业务功能 6：删除我的帖子
     public void deleteMyPost(Long postId, Long userId) {
         // 1. 先查出这个帖子是否存在
         ItemPost post = mapper.selectById(postId);
@@ -98,7 +98,7 @@ public class ItemPostService {
         mapper.deleteById(postId);
     }
 
-    // 新增功能 3：修改我的帖子
+    // 业务功能 7：修改我的帖子
     public ItemPost updateMyPost(Long postId, ItemPost updateData, Long userId) {
         ItemPost post = mapper.selectById(postId);
         if (post == null) {

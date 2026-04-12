@@ -35,7 +35,7 @@ public class ItemPostController {
         return service.getAllPosts();
     }
 
-    // 新增 API 3: 根据类型浏览帖子
+    // API 3: 根据类型浏览帖子
     // 路径会长这样：http://localhost:8080/api/posts/type/LOST
     @GetMapping("/type/{type}")
     public List<ItemPost> listByType(@PathVariable String type) {
@@ -43,7 +43,7 @@ public class ItemPostController {
         return service.getPostsByType(type);
     }
 
-    // 新增 API: 综合检索接口
+    // API 4: 综合检索接口
     // 访问路径类似：http://localhost:8080/api/posts/search?type=LOST&keyword=黑色
     @GetMapping("/search")
     public List<ItemPost> search(
@@ -54,15 +54,15 @@ public class ItemPostController {
         return service.searchPosts(type, keyword);
     }
 
-    // API: 获取我发布的帖子 (GET 请求)
+    // API 5: 获取我发布的帖子 (GET 请求)
     @GetMapping("/my")
     public List<ItemPost> getMyPosts(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("currentUserId");
         return service.getMyPosts(userId);
     }
 
-    // API: 修改我的帖子 (PUT 请求是修改的行业标准)
-    // 路径例如：PUT /api/posts/5
+    // API 6: 修改我的帖子 (PUT 请求)
+    // 路径例如：PUT /api/posts/{id}
     @PutMapping("/{id}")
     public Map<String, Object> updateMyPost(@PathVariable Long id, @RequestBody ItemPost post, HttpServletRequest request) {
         Map<String, Object> result = new HashMap<>();
@@ -78,8 +78,8 @@ public class ItemPostController {
         return result;
     }
 
-    // API: 删除我的帖子 (DELETE 请求)
-    // 路径例如：DELETE /api/posts/5
+    // API 7: 删除我的帖子 (DELETE 请求)
+    // 路径例如：DELETE /api/posts/{id}
     @DeleteMapping("/{id}")
     public Map<String, Object> deleteMyPost(@PathVariable Long id, HttpServletRequest request) {
         Map<String, Object> result = new HashMap<>();

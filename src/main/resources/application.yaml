@@ -16,6 +16,19 @@ spring:
     multipart:
       max-file-size: 10MB      # 单个文件最大允许 10MB
       max-request-size: 50MB   # 整个请求（可能包含多个文件）最大允许 50MB
+    # 👇 新增邮件配置 👇
+  mail:
+    host: smtp.qq.com       # QQ邮箱的服务器地址 (如果是网易用 smtp.163.com)
+    username: 3182055670@qq.com  # 替换成你的 QQ 邮箱
+    password: sjlcbxgicjszdefd     # 替换成你获取到的“授权码”（绝不是QQ密码！）
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 # MyBatis-Plus 配置
 mybatis-plus:
