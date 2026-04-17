@@ -39,21 +39,18 @@ public class UserController {
     }
 
     // 登录接口
-
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody User user) {
         Map<String, Object> result = new HashMap<>();
         try {
             User loginUser = userService.login(user.getUsername(), user.getPassword());
 
-            // ================= 新增代码 =================
             // 登录成功，生成 Token 令牌！
             String token = JwtUtils.generateToken(loginUser.getId(), loginUser.getUsername(), loginUser.getRole());
 
             result.put("success", true);
             result.put("data", loginUser);
             result.put("token", token); // 把手环交给前端！
-            // ==========================================
 
         } catch (Exception e) {
             result.put("success", false);
@@ -62,7 +59,7 @@ public class UserController {
         return result;
     }
 
-    // 新增：请求发送验证码接口
+    // 请求发送验证码接口
     // 这里因为只需接收一个邮箱，就不用特意建个实体类了，用 Map 接收一下即可
     @PostMapping("/send-code")
     public Map<String, Object> sendCode(@RequestBody Map<String, String> params) {

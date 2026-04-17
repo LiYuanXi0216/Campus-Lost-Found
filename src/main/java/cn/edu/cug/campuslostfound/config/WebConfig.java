@@ -13,7 +13,6 @@ import java.io.File;
 @Configuration // 告诉 Spring Boot 这是一个配置类
 public class WebConfig implements WebMvcConfigurer {
 
-    // 注入我们刚刚写的保安（拦截器）
     @Autowired
     private AuthenticationInterceptor authInterceptor;
     @Autowired

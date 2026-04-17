@@ -29,7 +29,6 @@ public class AdminInterceptor implements HandlerInterceptor {
             Claims claims = JwtUtils.parseToken(token);
             String role = claims.get("role", String.class);
 
-            // ！！！VIP 核心校验 ！！！
             if (!"ADMIN".equals(role)) {
                 // 如果不是管理员，返回 403 (Forbidden: 拒绝访问)
                 // 403的意思是：我知道你是谁，但你没有权限进这里！
