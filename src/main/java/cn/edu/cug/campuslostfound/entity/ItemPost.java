@@ -20,12 +20,21 @@ public class ItemPost {
     private String title;
     private String description;
     private String contact;
-    private LocalDateTime createTime;
-    private String location;
     private String imageUrl; // 图片 URL
     private String itemStatus; // 物品状态（如：丢失、找到）
-    private String incidentTime; // 丢失/捡到的描述性时间
+    // 1. 重构的时间字段
+    private java.time.LocalDate incidentStartDate; // 起始日期
+    private java.time.LocalDate incidentEndDate;   // 结束日期
+    private String incidentTimeDesc;               // 模糊时间描述
+
+    // 2. 重构的地点字段
+    private Long buildingId;       // 绑定的建筑字典ID
+    private String locationDesc;   // 详细位置说明
+
+    // GPS 经纬度 (保持不变，但业务上变为非必填)
+    private Double latitude;
+    private Double longitude;
+
+    private java.time.LocalDateTime createTime;
     private String publisherId;
-    private Double latitude;  // 纬度
-    private Double longitude; // 经度
 }

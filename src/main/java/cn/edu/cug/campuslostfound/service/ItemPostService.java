@@ -112,7 +112,6 @@ public class ItemPostService {
         // 4. 将前端传来的新数据覆盖旧数据 (这里只允许修改部分字段)
         if (updateData.getTitle() != null) post.setTitle(updateData.getTitle());
         if (updateData.getDescription() != null) post.setDescription(updateData.getDescription());
-        if (updateData.getLocation() != null) post.setLocation(updateData.getLocation());
         if (updateData.getContact() != null) post.setContact(updateData.getContact());
         if (updateData.getItemStatus() != null) post.setItemStatus(updateData.getItemStatus());
         if (updateData.getType() != null) post.setType(updateData.getType());
