@@ -244,3 +244,84 @@ Content-Type: application/json
 ### 2. 获取个人中心聚合数据
 GET http://localhost:8080/api/users/profile
 Authorization: {{my_token}}
+
+
+### =========================================
+### 重构后的大满贯测试 (V2.0 数据库)
+### =========================================
+
+### 0. 准备工作：登录获取 Token (请用你数据库里现有的账号密码)
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "liyuanxi",
+  "password": "123456"
+}
+> {% client.global.set("my_token", response.body.token); %}
+
+
+### 1. 测试发帖 (丢失物品 - 无精确GPS，有日期区间)
+POST http://localhost:8080/api/posts
+Authorization: {{my_token}}
+Content-Type: application/json
+
+{
+  "type": "LOST",
+  "title": "急寻黑色AirPods",
+  "description": "装在马里奥硅胶套里",
+  "contact": "微信：test1234",
+  "incidentStartDate": "2026-04-15",
+  "incidentEndDate": "2026-04-16",
+  "incidentTimeDesc": "大概在下午两点到四点之间",
+  "buildingId": 1,
+  "locationDesc": "二楼靠窗的自习座位上"
+}
+
+
+### 2. 测试发帖 (拾取物品 - 有精确GPS，单日发生)
+POST http://localhost:8080/api/posts
+Authorization: {{my_token}}
+Content-Type: application/json
+
+{
+  "type": "FOUND",
+  "title": "捡到一张校园卡",
+  "description": "卡号：20260011",
+  "contact": "请直接来东区保安室领取",
+  "incidentStartDate": "2026-04-18",
+  "incidentEndDate": "2026-04-18",
+  "incidentTimeDesc": "刚刚捡到的",
+  "buildingId": 2,
+  "locationDesc": "食堂一楼打饭窗口前的地上",
+  "latitude": 30.523456,
+  "longitude": 114.319876
+}
+
+
+### 3. 测试搜索 (通过新的模糊时间描述/地点描述进行搜索)
+GET http://localhost:8080/api/posts/search?keyword=自习
+
+
+### 4. 获取我发布的帖子 (拿到上一步刚刚发布的帖子的ID)
+GET http://localhost:8080/api/posts/my
+Authorization: {{my_token}}
+
+### 👉 假设上一条请求返回的 AirPods 帖子 ID 是 1，把它填到下面：
+
+
+### 5. 测试修改我的帖子 (只修改状态和模糊描述，其他保留)
+PUT http://localhost:8080/api/posts/2
+Authorization: {{my_token}}
+Content-Type: application/json
+
+{
+  "itemStatus": "RESOLVED",
+  "incidentTimeDesc": "我想起来了，是下午三点半！",
+  "locationDesc": "二楼靠窗的自习座位上(已找到)"
+}
+
+
+### 6. 测试删除我的帖子 (填入校园卡帖子的 ID，假设是 2)
+DELETE http://localhost:8080/api/posts/3
+Authorization: {{my_token}}

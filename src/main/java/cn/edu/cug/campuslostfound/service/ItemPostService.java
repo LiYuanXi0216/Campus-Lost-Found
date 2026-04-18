@@ -19,11 +19,15 @@ public class ItemPostService {
 
     // 业务功能 1：发布帖子
     public ItemPost createPost(ItemPost post, Long userId) {
-        post.setCreateTime(LocalDateTime.now());
-        post.setPublisherId(userId.toString()); // 自动识别并绑定发帖人！
-        if (post.getItemStatus() == null) {
-            post.setItemStatus("PENDING"); // 默认状态为寻找中/招领中
+        post.setCreateTime(java.time.LocalDateTime.now());
+        post.setPublisherId(userId.toString());
+
+        // 逻辑优化：如果是寻物(LOST)，强制清空经纬度，防止误导
+        if ("LOST".equals(post.getType())) {
+            post.setLatitude(null);
+            post.setLongitude(null);
         }
+
         mapper.insert(post);
         return post;
     }
@@ -48,27 +52,24 @@ public class ItemPostService {
     public List<ItemPost> searchPosts(String type, String keyword) {
         QueryWrapper<ItemPost> queryWrapper = new QueryWrapper<>();
 
-        // 1. 如果前端传了 type (比如只看 LOST)，就加上 type 条件
-        // StringUtils.hasText() 用于判断字符串是不是空的
-        if (StringUtils.hasText(type) && !type.equals("ALL")) {
+        // 分类过滤
+        if (type != null && !type.equals("ALL")) {
             queryWrapper.eq("type", type);
         }
 
-        // 2. 如果前端传了 keyword，就在标题、描述、地点里进行模糊匹配
-        if (StringUtils.hasText(keyword)) {
-            // 相当于 SQL: AND (title LIKE '%keyword%' OR description LIKE '%keyword%' OR location LIKE '%keyword%')
+        // 关键词模糊匹配 (修改了底层的字段名)
+        if (keyword != null && !keyword.trim().isEmpty()) {
             queryWrapper.and(wrapper -> wrapper
                     .like("title", keyword)
                     .or()
                     .like("description", keyword)
                     .or()
-                    .like("location", keyword)
+                    .like("location_desc", keyword) // 👉 以前是 location
+                    .or()
+                    .like("incident_time_desc", keyword) // 👉 增加对模糊时间的搜索
             );
         }
-
-        // 3. 按发布时间倒序排列 (最新的帖子在最上面)
         queryWrapper.orderByDesc("create_time");
-
         return mapper.selectList(queryWrapper);
     }
 
@@ -116,6 +117,14 @@ public class ItemPostService {
         if (updateData.getItemStatus() != null) post.setItemStatus(updateData.getItemStatus());
         if (updateData.getType() != null) post.setType(updateData.getType());
         if (updateData.getImageUrl() != null) post.setImageUrl(updateData.getImageUrl());
+        if (updateData.getIncidentStartDate() != null) post.setIncidentStartDate(updateData.getIncidentStartDate());
+        if (updateData.getIncidentEndDate() != null) post.setIncidentEndDate(updateData.getIncidentEndDate());
+        if (updateData.getIncidentTimeDesc() != null) post.setIncidentTimeDesc(updateData.getIncidentTimeDesc());
+        if (updateData.getBuildingId() != null) post.setBuildingId(updateData.getBuildingId());
+        if (updateData.getLocationDesc() != null) post.setLocationDesc(updateData.getLocationDesc());
+        if (updateData.getLatitude() != null) post.setLatitude(updateData.getLatitude());
+        if (updateData.getLongitude() != null) post.setLongitude(updateData.getLongitude());
+
 
         // 5. 保存回数据库
         mapper.updateById(post);
