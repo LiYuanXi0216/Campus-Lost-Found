@@ -49,28 +49,45 @@ public class ItemPostService {
     }
 
     // 业务功能4：综合检索 (支持按类型过滤 + 关键词模糊匹配)
-    public List<ItemPost> searchPosts(String type, String keyword) {
-        QueryWrapper<ItemPost> queryWrapper = new QueryWrapper<>();
+    public List<ItemPost> searchPosts(String type, String keyword, Long buildingId, String startDate, String endDate) {
+        QueryWrapper<ItemPost> wrapper = new QueryWrapper<>();
 
-        // 分类过滤
+        // 1. 类型精确过滤
         if (type != null && !type.equals("ALL")) {
-            queryWrapper.eq("type", type);
+            wrapper.eq("type", type);
         }
 
-        // 关键词模糊匹配 (修改了底层的字段名)
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            queryWrapper.and(wrapper -> wrapper
-                    .like("title", keyword)
-                    .or()
-                    .like("description", keyword)
-                    .or()
-                    .like("location_desc", keyword) // 👉 以前是 location
-                    .or()
-                    .like("incident_time_desc", keyword) // 👉 增加对模糊时间的搜索
-            );
+        // 2. 建筑物精确过滤
+        if (buildingId != null) {
+            wrapper.eq("building_id", buildingId);
         }
-        queryWrapper.orderByDesc("create_time");
-        return mapper.selectList(queryWrapper);
+
+        // 3. 时间区间交集碰撞算法
+        // 只要 帖子的开始时间 <= 搜索的结束时间 且 帖子的结束时间 >= 搜索的开始时间，就说明有重叠！
+        if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+            wrapper.le("incident_start_date", endDate)
+                    .ge("incident_end_date", startDate);
+        }
+
+        // 4. 伪智能分词：多关键词模糊匹配
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // 将用户输入的关键词按空格切分 (例如 "黑色 校园卡" 变成 ["黑色", "校园卡"])
+            String[] keywords = keyword.trim().split("\\s+");
+
+            // 构建 AND 条件组，要求输入的每个词都必须在标题、描述或位置中出现
+            wrapper.and(w -> {
+                for (String kw : keywords) {
+                    w.like("title", kw)
+                            .or().like("description", kw)
+                            .or().like("location_desc", kw)
+                            .or().like("incident_time_desc", kw);
+                }
+            });
+        }
+
+        // 按发布时间倒序排列
+        wrapper.orderByDesc("create_time");
+        return mapper.selectList(wrapper);
     }
 
     // 业务功能 5：查询我发布的帖子

@@ -66,22 +66,25 @@ public class UserService {
     }
 
     // 功能 2：用户登录
-    public User login(String username, String password) {
-        // 1. 把用户传进来的明文密码，用同样的规则加密
+    // 核心修改：将 username 参数改名为 account，代表它可以是账号也可以是邮箱
+    public User login(String account, String password) {
         String md5Password = DigestUtils.md5DigestAsHex(password.getBytes());
 
-        // 2. 去数据库里同时匹配账号和加密后的密码
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("username", username);
+        // 💡 重点：使用 and() 嵌套 or() 逻辑
+        queryWrapper.and(wrapper -> wrapper
+                .eq("username", account)
+                .or()
+                .eq("email", account)
+        );
         queryWrapper.eq("password", md5Password);
 
         User user = userMapper.selectOne(queryWrapper);
 
         if (user == null) {
-            throw new RuntimeException("账号或密码错误！");
+            throw new RuntimeException("账号/邮箱不存在，或密码错误！");
         }
 
-        // 登录成功，同样清空密码后再返回给前端
         user.setPassword(null);
         return user;
     }

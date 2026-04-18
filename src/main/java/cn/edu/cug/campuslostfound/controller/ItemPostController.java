@@ -47,11 +47,12 @@ public class ItemPostController {
     // 访问路径类似：http://localhost:8080/api/posts/search?type=LOST&keyword=黑色
     @GetMapping("/search")
     public List<ItemPost> search(
-            // @RequestParam 表示从 URL 的问号后面取参数，required = false 表示前端可以不传这个参数
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String keyword) {
-
-        return service.searchPosts(type, keyword);
+            @RequestParam(required = false, defaultValue = "ALL") String type,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long buildingId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        return service.searchPosts(type, keyword, buildingId, startDate, endDate);
     }
 
     // API 5: 获取我发布的帖子 (GET 请求)

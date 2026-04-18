@@ -5,14 +5,26 @@
         <h2>📋 信息大厅</h2>
         <button class="btn btn-primary" @click="openPostModal()">+ 发布新信息</button>
       </div>
-      <div class="search-bar">
-        <input type="text" v-model="searchKeyword" placeholder="搜索关键词(标题/描述/地点)..." />
-        <select v-model="searchType">
-          <option value="ALL">全部类型</option>
-          <option value="LOST">寻物启事</option>
-          <option value="FOUND">招领启事</option>
-        </select>
-        <button class="btn btn-primary" @click="loadPosts">搜索</button>
+      <div class="search-panel" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <input type="text" v-model="searchQuery.keyword" placeholder="输入多个关键词请用空格隔开 (如: 黑色 校园卡)" style="flex: 2; margin: 0;" @keyup.enter="loadPosts" />
+          <select v-model="searchQuery.type" style="flex: 1; margin: 0;">
+            <option value="ALL">全部类型</option>
+            <option value="LOST">寻物启事</option>
+            <option value="FOUND">招领启事</option>
+          </select>
+          <select v-model="searchQuery.buildingId" style="flex: 1; margin: 0;">
+            <option value="">所有区域</option>
+            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span style="font-size: 14px; color: #555;">发生时间段：</span>
+          <input type="date" v-model="searchQuery.startDate" style="width: auto; margin: 0;" />
+          <span>至</span>
+          <input type="date" v-model="searchQuery.endDate" style="width: auto; margin: 0;" />
+          <button class="btn btn-primary" style="margin-left: auto; padding: 8px 30px;" @click="loadPosts">🔍 精准搜索</button>
+        </div>
       </div>
 
       <div class="post-list">
@@ -85,11 +97,12 @@
 
         <div class="flex-row">
           <select v-model="postForm.buildingId">
-            <option value="">-- 选择附近建筑字典 --</option>
-            <option value="1">图书馆</option>
-            <option value="2">西区第一食堂</option>
+            <option value="">-- 选择附近建筑 (可选) --</option>
+            <option v-for="b in buildings" :key="b.id" :value="b.id">
+              {{ b.name }} <span v-if="b.aliases">({{ b.aliases }})</span>
+            </option>
           </select>
-          <button v-if="postForm.type === 'FOUND'" class="btn btn-success" @click="autoGetLocation">📍 定位</button>
+          <button v-if="postForm.type === 'FOUND'" class="btn btn-success" @click="autoGetLocation">📍 自动获取GPS</button>
         </div>
         <input type="text" v-model="postForm.locationDesc" placeholder="具体位置说明 (例：二楼靠窗)" />
         <textarea v-model="postForm.description" rows="3" placeholder="详细描述物品特征..."></textarea>
@@ -132,8 +145,13 @@ const defaultImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALA
 const posts = ref([]);
 const myPosts = ref([]);
 const profileData = ref(null);
-const searchType = ref('ALL');
-const searchKeyword = ref('');
+const searchQuery = ref({
+  type: 'ALL',
+  keyword: '',
+  buildingId: '',
+  startDate: '',
+  endDate: ''
+});
 const isMyPostsView = ref(false);
 
 // 弹窗状态
@@ -142,6 +160,23 @@ const showDetailModal = ref(false);
 const isSubmitting = ref(false);
 const currentPost = ref({});
 const selectedFile = ref(null);
+
+const buildings = ref([]); // 新增：用来存放后端的建筑物字典
+
+onMounted(() => {
+  loadPosts();
+  loadBuildings(); // 新增：一进页面就去后端拉取字典
+});
+
+// 新增加载字典的方法
+const loadBuildings = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/buildings`);
+    buildings.value = await res.json();
+  } catch (e) {
+    console.error('建筑物字典加载失败');
+  }
+};
 
 // 表单数据 (严格对齐后端 v2.0 字段)
 const postForm = ref({
@@ -167,11 +202,20 @@ onMounted(() => { loadPosts(); });
 
 // 接口请求方法
 const loadPosts = async () => {
-  let url = `${API_BASE}/posts/search?`;
-  if (searchType.value !== 'ALL') url += `type=${searchType.value}&`;
-  if (searchKeyword.value) url += `keyword=${searchKeyword.value}`;
-  const res = await fetch(url);
-  posts.value = await res.json();
+  // 构建 URL 查询参数
+  const params = new URLSearchParams();
+  if (searchQuery.value.type !== 'ALL') params.append('type', searchQuery.value.type);
+  if (searchQuery.value.keyword.trim()) params.append('keyword', searchQuery.value.keyword.trim());
+  if (searchQuery.value.buildingId) params.append('buildingId', searchQuery.value.buildingId);
+  if (searchQuery.value.startDate) params.append('startDate', searchQuery.value.startDate);
+  if (searchQuery.value.endDate) params.append('endDate', searchQuery.value.endDate);
+
+  try {
+    const res = await fetch(`${API_BASE}/posts/search?${params.toString()}`);
+    posts.value = await res.json();
+  } catch (e) {
+    console.error('搜索加载失败', e);
+  }
 };
 
 const loadProfile = async () => {
@@ -209,11 +253,27 @@ const handleFileChange = (e) => {
 
 const autoGetLocation = () => {
   if (!navigator.geolocation) return alert('浏览器不支持定位');
+
+  // 按钮视觉反馈
+  const btn = event.target;
+  const originalText = btn.innerText;
+  btn.innerText = '⏳ 定位中...';
+
   navigator.geolocation.getCurrentPosition(async (pos) => {
+    // 💡 核心修改：只悄悄把数据存进表单对象的隐藏字段里
     postForm.value.latitude = pos.coords.latitude;
     postForm.value.longitude = pos.coords.longitude;
-    postForm.value.locationDesc = `已获取GPS坐标: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-  }, (err) => alert('定位失败，请允许权限'));
+
+    // 恢复按钮并弹窗提示用户
+    btn.innerText = '✅ 定位成功';
+    alert('📍 GPS 精确坐标已在后台获取！\n您可以继续在下方文本框中手动输入详细地名（如：二楼靠窗）。');
+
+    // 3秒后按钮恢复原样
+    setTimeout(() => { btn.innerText = originalText; }, 3000);
+  }, (err) => {
+    alert('定位失败，请确保设备开启了定位权限');
+    btn.innerText = originalText;
+  });
 };
 
 const submitPost = async () => {

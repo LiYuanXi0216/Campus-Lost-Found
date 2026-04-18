@@ -25,7 +25,7 @@
         <span class="close-btn" @click="showAuthModal = false">&times;</span>
         <h2>{{ isRegisterMode ? '账号注册' : '用户登录' }}</h2>
 
-        <input type="text" v-model="authForm.username" placeholder="账号 (必填)" />
+        <input type="text" v-model="authForm.username" placeholder="账号 或 绑定的邮箱 (必填)" />
         <input type="password" v-model="authForm.password" placeholder="密码 (必填)" />
 
         <template v-if="isRegisterMode">
