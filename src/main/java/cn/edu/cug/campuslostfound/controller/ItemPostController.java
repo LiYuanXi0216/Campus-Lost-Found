@@ -1,7 +1,9 @@
 package cn.edu.cug.campuslostfound.controller;
 
 import cn.edu.cug.campuslostfound.entity.ItemPost;
+import cn.edu.cug.campuslostfound.entity.PostSubscription;
 import cn.edu.cug.campuslostfound.service.ItemPostService;
+import cn.edu.cug.campuslostfound.service.SubscriptionService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +17,11 @@ import java.util.Map;
 public class ItemPostController {
 
     private final ItemPostService service;
+    private final SubscriptionService subscriptionService;
 
-    public ItemPostController(ItemPostService service) {
+    public ItemPostController(ItemPostService service, SubscriptionService subscriptionService) {
         this.service = service;
+        this.subscriptionService = subscriptionService;
     }
 
     // API 1: 发布帖子 (使用 POST 请求)
@@ -89,6 +93,37 @@ public class ItemPostController {
             service.deleteMyPost(id, userId);
             result.put("success", true);
             result.put("message", "删除成功");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    // API: 主动获取相似匹配帖子
+    @GetMapping("/{id}/recommendations")
+    public Map<String, Object> getRecommendations(@PathVariable Long id) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            List<ItemPost> matches = service.getRecommendations(id);
+            result.put("success", true);
+            result.put("data", matches);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    // API: 开启订阅
+    @PostMapping("/subscribe")
+    public Map<String, Object> subscribe(@RequestBody PostSubscription sub, jakarta.servlet.http.HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Long userId = (Long) request.getAttribute("currentUserId");
+            subscriptionService.subscribe(userId, sub.getKeyword(), sub.getBuildingId());
+            result.put("success", true);
+            result.put("message", "订阅成功！有新匹配将邮件通知您。");
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());

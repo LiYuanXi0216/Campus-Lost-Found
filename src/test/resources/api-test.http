@@ -325,3 +325,51 @@ Content-Type: application/json
 ### 6. 测试删除我的帖子 (填入校园卡帖子的 ID，假设是 2)
 DELETE http://localhost:8080/api/posts/3
 Authorization: {{my_token}}
+
+
+### 0. 登录获取 Token (用带有真实邮箱的账号登录)
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "liyuandong",
+  "password": "123456"
+}
+> {% client.global.set("my_token", response.body.token); %}
+
+### 1. 新建一条订阅规则 (我要找黑色的耳机，没有固定建筑，全校监听)
+POST http://localhost:8080/api/posts/subscribe
+Authorization: {{my_token}}
+Content-Type: application/json
+
+{
+  "keyword": "耳机"
+}
+
+### -----------------------------------------
+### 👇 模拟另一个同学 (甚至不登录也可以，只要有人发帖)
+### -----------------------------------------
+
+### 2. 模拟另一个同学发了一个招领帖子 (带有关键词"耳机")
+POST http://localhost:8080/api/posts
+Authorization: {{my_token}}
+Content-Type: application/json
+
+{
+  "type": "LOST",
+  "title": "捡到一个黑色索尼耳机",
+  "description": "食堂打饭窗口捡到的",
+  "contact": "微信：find123",
+  "buildingId": 2,
+  "locationDesc": "食堂二楼"
+}
+
+### 💥 观察你的控制台！你会看到 【✅ 成功向 xxx 发送订阅匹配邮件！】
+### 去你的真实邮箱看看，是不是收到了一封惊艳的匹配提醒邮件？
+
+### -----------------------------------------
+
+### 3. 测试主动推荐 (假设刚才那个找耳机的 LOST 帖子 ID 是 1)
+GET http://localhost:8080/api/posts/13/recommendations
+Authorization: {{my_token}}
+### -> 它会把上面刚捡到的那个耳机帖子给你列出来！

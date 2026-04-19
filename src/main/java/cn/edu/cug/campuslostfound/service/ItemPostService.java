@@ -2,6 +2,7 @@ package cn.edu.cug.campuslostfound.service;
 
 import cn.edu.cug.campuslostfound.entity.ItemPost;
 import cn.edu.cug.campuslostfound.mapper.ItemPostMapper;
+import cn.edu.cug.campuslostfound.entity.PostSubscription;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,15 +13,18 @@ import org.springframework.util.StringUtils; // 引入Spring自带的工具类
 public class ItemPostService {
 
     private final ItemPostMapper mapper;
+    private final SubscriptionService subscriptionService;
 
-    public ItemPostService(ItemPostMapper mapper) {
+    public ItemPostService(ItemPostMapper mapper, SubscriptionService subscriptionService) {
         this.mapper = mapper;
+        this.subscriptionService = subscriptionService;
     }
 
     // 业务功能 1：发布帖子
     public ItemPost createPost(ItemPost post, Long userId) {
         post.setCreateTime(java.time.LocalDateTime.now());
         post.setPublisherId(userId.toString());
+        if (post.getItemStatus() == null) post.setItemStatus("PENDING");
 
         // 逻辑优化：如果是寻物(LOST)，强制清空经纬度，防止误导
         if ("LOST".equals(post.getType())) {
@@ -29,6 +33,12 @@ public class ItemPostService {
         }
 
         mapper.insert(post);
+
+        try {
+            subscriptionService.matchNewPostAndNotify(post);
+        } catch (Exception e) {
+            System.err.println("订阅通知系统异常：" + e.getMessage());
+        }
         return post;
     }
 
@@ -146,5 +156,21 @@ public class ItemPostService {
         // 5. 保存回数据库
         mapper.updateById(post);
         return post;
+    }
+
+    public List<ItemPost> getRecommendations(Long postId) {
+        ItemPost myPost = mapper.selectById(postId);
+        if (myPost == null) throw new RuntimeException("帖子不存在");
+
+        // 核心逻辑 1：反转类型 (如果是寻找，就去招领里找)
+        String oppositeType = myPost.getType().equals("LOST") ? "FOUND" : "LOST";
+
+        // 核心逻辑 2：提取关键分词 (简单策略：按空格切分标题，取前两个词)
+        String[] words = myPost.getTitle().split("\\s+");
+        String searchKeyword = words[0]; // 这里用第一个词去模糊搜索
+
+        // 核心逻辑 3：调用我们上一轮写好的无敌检索引擎
+        // 我们放宽时间要求，只匹配类型、关键词和地点
+        return searchPosts(oppositeType, searchKeyword, myPost.getBuildingId(), null, null);
     }
 }
