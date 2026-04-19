@@ -1,8 +1,7 @@
 package cn.edu.cug.campuslostfound.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,8 +30,10 @@ public class ItemPost {
     private Long buildingId;       // 绑定的建筑字典ID
     private String locationDesc;   // 详细位置说明
 
-    // GPS 经纬度 (保持不变，但业务上变为非必填)
+    @TableField(updateStrategy = FieldStrategy.IGNORED) // 💡 重点：不管是不是 null，都强行更新到数据库
     private Double latitude;
+
+    @TableField(updateStrategy = FieldStrategy.IGNORED) // 💡 重点：不管是不是 null，都强行更新到数据库
     private Double longitude;
 
     private java.time.LocalDateTime createTime;

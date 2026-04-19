@@ -145,14 +145,13 @@ const defaultImg = 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALA
 const posts = ref([]);
 const myPosts = ref([]);
 const profileData = ref(null);
-const searchQuery = ref({
-  type: 'ALL',
-  keyword: '',
-  buildingId: '',
-  startDate: '',
-  endDate: ''
-});
+const buildings = ref([]); // 建筑物字典
 const isMyPostsView = ref(false);
+
+// 🚀 高级搜索状态
+const searchQuery = ref({
+  type: 'ALL', keyword: '', buildingId: '', startDate: '', endDate: ''
+});
 
 // 弹窗状态
 const showModal = ref(false);
@@ -161,14 +160,44 @@ const isSubmitting = ref(false);
 const currentPost = ref({});
 const selectedFile = ref(null);
 
-const buildings = ref([]); // 新增：用来存放后端的建筑物字典
-
-onMounted(() => {
-  loadPosts();
-  loadBuildings(); // 新增：一进页面就去后端拉取字典
+// 表单数据
+const postForm = ref({
+  id: null, type: 'LOST', title: '', description: '', contact: '',
+  incidentStartDate: '', incidentEndDate: '', incidentTimeDesc: '',
+  buildingId: '', locationDesc: '', latitude: null, longitude: null, imageUrl: ''
 });
 
-// 新增加载字典的方法
+// 🐛 修复前端 Bug：监听表单类型的变化 (必须放在 postForm 定义之后！)
+watch(() => postForm.value.type, (newType) => {
+  if (newType === 'LOST') {
+    // 切换到 LOST 时，清空暂存的 GPS 数据
+    postForm.value.latitude = null;
+    postForm.value.longitude = null;
+    if (postForm.value.locationDesc && postForm.value.locationDesc.includes('已获取GPS坐标')) {
+      postForm.value.locationDesc = '';
+    }
+  }
+});
+
+// 监听 Tab 切换
+watch(() => props.activeTab, (newTab) => {
+  if (newTab === 'home') { isMyPostsView.value = false; loadPosts(); }
+  if (newTab === 'profile') { isMyPostsView.value = true; loadProfile(); loadMyPosts(); }
+});
+
+const getHeaders = (isUpload = false) => {
+  const headers = { 'Authorization': localStorage.getItem('token') || '' };
+  if (!isUpload) headers['Content-Type'] = 'application/json';
+  return headers;
+};
+
+// 页面初始化
+onMounted(() => {
+  loadBuildings();
+  loadPosts();
+});
+
+// 加载建筑物字典
 const loadBuildings = async () => {
   try {
     const res = await fetch(`${API_BASE}/buildings`);
@@ -178,31 +207,8 @@ const loadBuildings = async () => {
   }
 };
 
-// 表单数据 (严格对齐后端 v2.0 字段)
-const postForm = ref({
-  id: null, type: 'LOST', title: '', description: '', contact: '',
-  incidentStartDate: '', incidentEndDate: '', incidentTimeDesc: '',
-  buildingId: '', locationDesc: '', latitude: null, longitude: null, imageUrl: ''
-});
-
-// 工具方法：获取请求头
-const getHeaders = (isUpload = false) => {
-  const headers = { 'Authorization': localStorage.getItem('token') || '' };
-  if (!isUpload) headers['Content-Type'] = 'application/json';
-  return headers;
-};
-
-// 监听 Tab 切换
-watch(() => props.activeTab, (newTab) => {
-  if (newTab === 'home') { isMyPostsView.value = false; loadPosts(); }
-  if (newTab === 'profile') { isMyPostsView.value = true; loadProfile(); loadMyPosts(); }
-});
-
-onMounted(() => { loadPosts(); });
-
-// 接口请求方法
+// 加载帖子 (带高级搜索参数)
 const loadPosts = async () => {
-  // 构建 URL 查询参数
   const params = new URLSearchParams();
   if (searchQuery.value.type !== 'ALL') params.append('type', searchQuery.value.type);
   if (searchQuery.value.keyword.trim()) params.append('keyword', searchQuery.value.keyword.trim());
@@ -229,7 +235,6 @@ const loadMyPosts = async () => {
   myPosts.value = await res.json();
 };
 
-// 弹窗与表单操作
 const showDetail = (post) => {
   currentPost.value = post;
   showDetailModal.value = true;
@@ -239,9 +244,8 @@ const openPostModal = (post = null) => {
   if (!localStorage.getItem('token')) return alert('请先登录！');
   selectedFile.value = null;
   if (post) {
-    postForm.value = { ...post }; // 回显数据
+    postForm.value = { ...post };
   } else {
-    // 重置表单
     postForm.value = { id: null, type: 'LOST', title: '', description: '', contact: '', incidentStartDate: '', incidentEndDate: '', incidentTimeDesc: '', buildingId: '', locationDesc: '', latitude: null, longitude: null, imageUrl: '' };
   }
   showModal.value = true;
@@ -251,27 +255,21 @@ const handleFileChange = (e) => {
   if (e.target.files.length > 0) selectedFile.value = e.target.files[0];
 };
 
-const autoGetLocation = () => {
+// 优化后的 GPS 定位
+const autoGetLocation = (event) => {
   if (!navigator.geolocation) return alert('浏览器不支持定位');
-
-  // 按钮视觉反馈
   const btn = event.target;
   const originalText = btn.innerText;
   btn.innerText = '⏳ 定位中...';
 
   navigator.geolocation.getCurrentPosition(async (pos) => {
-    // 💡 核心修改：只悄悄把数据存进表单对象的隐藏字段里
     postForm.value.latitude = pos.coords.latitude;
     postForm.value.longitude = pos.coords.longitude;
-
-    // 恢复按钮并弹窗提示用户
     btn.innerText = '✅ 定位成功';
-    alert('📍 GPS 精确坐标已在后台获取！\n您可以继续在下方文本框中手动输入详细地名（如：二楼靠窗）。');
-
-    // 3秒后按钮恢复原样
+    alert('📍 GPS 精确坐标已在后台获取！您可以继续手动输入详细地名。');
     setTimeout(() => { btn.innerText = originalText; }, 3000);
   }, (err) => {
-    alert('定位失败，请确保设备开启了定位权限');
+    alert('定位失败，请允许权限');
     btn.innerText = originalText;
   });
 };
@@ -279,7 +277,6 @@ const autoGetLocation = () => {
 const submitPost = async () => {
   isSubmitting.value = true;
   try {
-    // 1. 上传图片
     if (selectedFile.value) {
       const formData = new FormData();
       formData.append('file', selectedFile.value);
@@ -291,11 +288,9 @@ const submitPost = async () => {
       }
     }
 
-    // 2. 发送帖子数据
     const method = postForm.value.id ? 'PUT' : 'POST';
     const url = postForm.value.id ? `${API_BASE}/posts/${postForm.value.id}` : `${API_BASE}/posts`;
 
-    // 数据清理（空字符串转null）
     const payload = { ...postForm.value };
     if(!payload.buildingId) payload.buildingId = null;
     if(!payload.incidentStartDate) payload.incidentStartDate = null;

@@ -3,6 +3,8 @@ package cn.edu.cug.campuslostfound.service;
 import cn.edu.cug.campuslostfound.entity.ItemPost;
 import cn.edu.cug.campuslostfound.mapper.ItemPostMapper;
 import cn.edu.cug.campuslostfound.entity.PostSubscription;
+import cn.edu.cug.campuslostfound.entity.CampusBuilding;
+import cn.edu.cug.campuslostfound.mapper.CampusBuildingMapper;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,10 +16,33 @@ public class ItemPostService {
 
     private final ItemPostMapper mapper;
     private final SubscriptionService subscriptionService;
+    private final CampusBuildingMapper buildingMapper;
 
-    public ItemPostService(ItemPostMapper mapper, SubscriptionService subscriptionService) {
+    public ItemPostService(ItemPostMapper mapper, SubscriptionService subscriptionService, CampusBuildingMapper buildingMapper) {
         this.mapper = mapper;
         this.subscriptionService = subscriptionService;
+        this.buildingMapper = buildingMapper;
+    }
+
+    // ==========================================
+    // 通用方法：清洗和补全空间数据 (抽取出的核心逻辑)
+    // ==========================================
+    private void cleanAndFillLocationData(ItemPost post) {
+        if ("LOST".equals(post.getType())) {
+            // 🐛 修复 Bug：如果是寻物启事，强行清空精确 GPS
+            post.setLatitude(null);
+            post.setLongitude(null);
+        } else if ("FOUND".equals(post.getType())) {
+            // 🚀 逻辑增强：如果是招领启事，且前端没有传来精确 GPS，但选了建筑物
+            if (post.getLatitude() == null && post.getBuildingId() != null) {
+                CampusBuilding building = buildingMapper.selectById(post.getBuildingId());
+                if (building != null) {
+                    // 继承建筑物的中心坐标作为保底
+                    post.setLatitude(building.getCenterLat());
+                    post.setLongitude(building.getCenterLng());
+                }
+            }
+        }
     }
 
     // 业务功能 1：发布帖子
@@ -32,6 +57,8 @@ public class ItemPostService {
             post.setLongitude(null);
         }
 
+        // 👉 插入前，清洗一下空间数据
+        cleanAndFillLocationData(post);
         mapper.insert(post);
 
         try {
@@ -152,6 +179,8 @@ public class ItemPostService {
         if (updateData.getLatitude() != null) post.setLatitude(updateData.getLatitude());
         if (updateData.getLongitude() != null) post.setLongitude(updateData.getLongitude());
 
+        // 👉 更新进数据库前，再清洗一次（防止用户把 FOUND 改成了 LOST）
+        cleanAndFillLocationData(post);
 
         // 5. 保存回数据库
         mapper.updateById(post);
