@@ -19,4 +19,5 @@ public class CampusBuilding {
     private Double centerLat;
     private Double centerLng;
 
+
 }
