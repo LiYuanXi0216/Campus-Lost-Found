@@ -332,7 +332,7 @@ POST http://localhost:8080/api/users/login
 Content-Type: application/json
 
 {
-  "username": "liyuandong",
+  "username": "liyuanxi",
   "password": "123456"
 }
 > {% client.global.set("my_token", response.body.token); %}
@@ -343,7 +343,7 @@ Authorization: {{my_token}}
 Content-Type: application/json
 
 {
-  "keyword": "耳机"
+  "keyword": "笔记本"
 }
 
 ### -----------------------------------------
@@ -373,3 +373,21 @@ Content-Type: application/json
 GET http://localhost:8080/api/posts/13/recommendations
 Authorization: {{my_token}}
 ### -> 它会把上面刚捡到的那个耳机帖子给你列出来！
+
+### 1. 查看我的所有订阅 (用于管理)
+GET http://localhost:8080/api/subscriptions/my
+Authorization: {{my_token}}
+
+### 2. 取消一个不需要的订阅 (假设ID为1)
+DELETE http://localhost:8080/api/subscriptions/1
+Authorization: {{my_token}}
+
+### -----------------------------------------
+
+### 3. 获取我的消息列表 (查看匹配结果、评论等)
+GET http://localhost:8080/api/messages/my
+Authorization: {{my_token}}
+
+### 4. 预留：模拟发送一条评论消息 (直接调用后端内部接口逻辑测试)
+# 这一步目前由后端代码在评论功能开发时自动触发
+# 你可以尝试在数据库里手动插入一条 app_message 数据，然后执行第3步，看看能否查出来。

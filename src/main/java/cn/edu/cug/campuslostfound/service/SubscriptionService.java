@@ -19,14 +19,16 @@ public class SubscriptionService {
     private final PostSubscriptionMapper subscriptionMapper;
     private final UserMapper userMapper;
     private final JavaMailSender mailSender;
+    private final MessageService messageService;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    public SubscriptionService(PostSubscriptionMapper subscriptionMapper, UserMapper userMapper, JavaMailSender mailSender) {
+    public SubscriptionService(PostSubscriptionMapper subscriptionMapper, UserMapper userMapper, JavaMailSender mailSender, MessageService messageService) {
         this.subscriptionMapper = subscriptionMapper;
         this.userMapper = userMapper;
         this.mailSender = mailSender;
+        this.messageService = messageService;
     }
 
     // 功能 1：用户添加订阅规则
@@ -62,7 +64,17 @@ public class SubscriptionService {
 
             // 如果帖子的标题或内容包含了订阅的关键词
             if (postContent.contains(sub.getKeyword().toLowerCase())) {
+                // 1. 发邮件
                 sendMatchEmail(sub.getUserId(), newPost);
+
+                // 2. 存入站内消息中心 (新增)
+                messageService.pushMessage(
+                        sub.getUserId(),
+                        "SUBSCRIPTION",
+                        "订阅匹配成功：" + newPost.getTitle(),
+                        "为您匹配到一条符合规则的帖子，快去看看吧！",
+                        newPost.getId()
+                );
             }
         }
     }

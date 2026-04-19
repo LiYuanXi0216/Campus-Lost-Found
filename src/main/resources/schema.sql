@@ -24,9 +24,13 @@ CREATE TABLE `campus_building` (
 
 -- 插入几条测试字典数据
 INSERT INTO `campus_building` (`name`, `aliases`) VALUES
-                                                      ('图书馆', '主图,老图书馆'),
-                                                      ('西区第一食堂', '一食堂,西一'),
-                                                      ('教一楼', '第一教学楼');
+                                                      ('未来图书馆', '图书馆'),
+                                                      ('聚英园', '学一食堂'),
+                                                      ('崇道楼', '教二楼'),
+                                                      ('致知楼', '教一楼'),
+                                                      ('崇智楼', '计算机学院'),
+                                                      ('弘雅堂', '学生活动中心'),
+                                                      ('汇萃园', '学二食堂');
 
 -- 3. 核心帖子表 (解决痛点1、2、3：重构时间与地点字段)
 CREATE TABLE `item_post` (
@@ -63,3 +67,20 @@ CREATE TABLE `post_subscription` (
                                      `is_active` tinyint(1) DEFAULT 1 COMMENT '是否开启推送',
                                      PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户订阅规则表';
+
+-- 1. 全局消息表 (存储所有通知)
+CREATE TABLE `app_message` (
+                               `id` bigint NOT NULL AUTO_INCREMENT,
+                               `user_id` bigint NOT NULL COMMENT '接收者ID',
+                               `type` varchar(20) NOT NULL COMMENT '消息类型: SUBSCRIPTION(订阅匹配), COMMENT(评论), PRIVATE(私信)',
+                               `title` varchar(100) NOT NULL COMMENT '消息标题',
+                               `content` text NOT NULL COMMENT '消息正文',
+                               `related_id` bigint DEFAULT NULL COMMENT '关联ID (如帖子ID或私信ID，用于点击跳转)',
+                               `is_read` tinyint(1) DEFAULT 0 COMMENT '是否已读 (0-未读, 1-已读)',
+                               `create_time` datetime NOT NULL COMMENT '发送时间',
+                               PRIMARY KEY (`id`),
+                               INDEX `idx_user_read` (`user_id`, `is_read`) -- 优化查询性能
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='全局站内消息表';
+
+-- 2. 订阅管理增强 (确保索引)
+ALTER TABLE `post_subscription` ADD INDEX `idx_user_id` (`user_id`);
