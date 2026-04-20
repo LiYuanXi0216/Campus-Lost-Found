@@ -86,6 +86,20 @@ CREATE TABLE `app_message` (
 ALTER TABLE `post_subscription` ADD INDEX `idx_user_id` (`user_id`);
 
 -- 5. 评论表（评论与回复共用同一张表，便于统一查询与扩展）
+-- 设计思路：
+-- 1. 顶级评论和回复都存在同一张表里，避免拆两张表带来的查询和维护复杂度
+-- 2. parent_comment_id 表示“我直接回复的是谁”
+-- 3. root_comment_id 表示“我属于哪条顶级评论线程”
+--
+-- 示例：
+-- A 发表顶级评论 -> id=10, parent_comment_id=null, root_comment_id=10
+-- B 回复 A       -> id=11, parent_comment_id=10,   root_comment_id=10
+-- C 回复 B       -> id=12, parent_comment_id=11,   root_comment_id=10
+--
+-- 这样做的好处是：
+-- - 查询整个帖子评论时，只需要一次查出当前 post_id 的全部评论
+-- - 再按 root_comment_id 分组，就能快速恢复评论树
+-- - 同时也保留了“回复的是谁”的语义，前端可以展示“回复 xxx”
 CREATE TABLE `app_comment` (
                                `id` bigint NOT NULL AUTO_INCREMENT,
                                `publisher_id` bigint NOT NULL COMMENT '评论发布者用户ID',
@@ -102,3 +116,16 @@ CREATE TABLE `app_comment` (
                                INDEX `idx_comment_root` (`root_comment_id`, `create_time`),
                                INDEX `idx_comment_parent` (`parent_comment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帖子评论表（评论与回复统一存储）';
+
+-- 6. 评论点赞关系表（同一用户对同一评论只能存在一条点赞记录）
+-- 这里不把“谁点过赞”塞进 app_comment 表里，而是单独拆一张关系表，原因有三点：
+-- 1. 点赞是典型的多对多关系（一个用户能点赞很多评论，一条评论也能被很多用户点赞）
+-- 2. 需要快速判断“当前用户是否点过赞”
+-- 3. 后续如果要做点赞记录、点赞通知、点赞排行，单独建表更容易扩展
+CREATE TABLE `app_comment_like` (
+                                    `user_id` bigint NOT NULL COMMENT '点赞用户ID',
+                                    `comment_id` bigint NOT NULL COMMENT '被点赞评论ID',
+                                    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+                                    PRIMARY KEY (`user_id`, `comment_id`),
+                                    INDEX `idx_comment_like_comment` (`comment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评论点赞关系表';
