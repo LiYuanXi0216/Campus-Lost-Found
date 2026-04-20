@@ -18,7 +18,7 @@
       </div>
     </nav>
 
-    <HomeView :activeTab="activeTab" />
+    <HomeView :activeTab="activeTab" :isLoggedIn="isLoggedIn" />
 
     <div v-if="showAuthModal" class="modal-overlay">
       <div class="modal-content">
@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import HomeView from './views/HomeView.vue';
 
 const API_BASE = 'http://localhost:8080/api';
@@ -65,9 +65,15 @@ const showAuthModal = ref(false);
 const isRegisterMode = ref(false);
 const authForm = ref({ username: '', password: '', email: '', code: '', nickname: '' });
 
-// 页面加载时检查本地存储
+// 页面加载时检查本地存储，并额外校验一次 token 是否仍然有效
 onMounted(() => {
   checkLoginState();
+  window.addEventListener('auth-state-changed', checkLoginState);
+  validateLoginState();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('auth-state-changed', checkLoginState);
 });
 
 const checkLoginState = () => {
@@ -82,6 +88,33 @@ const checkLoginState = () => {
     isAdmin.value = false;
     currentUser.value = {};
     activeTab.value = 'home'; // 未登录强制回首页
+  }
+};
+
+const validateLoginState = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/users/profile`, {
+      headers: { 'Authorization': token }
+    });
+
+    // 如果后端明确返回 401，说明本地 token 已经过期或无效，前端必须同步退出登录
+    if (res.status === 401) {
+      doLogout();
+      return;
+    }
+
+    const data = await res.json();
+    if (data.success && data.data && data.data.userInfo) {
+      currentUser.value = data.data.userInfo;
+      localStorage.setItem('user', JSON.stringify(data.data.userInfo));
+      isLoggedIn.value = true;
+      isAdmin.value = currentUser.value.role === 'ADMIN';
+    }
+  } catch (e) {
+    console.error('登录态校验失败', e);
   }
 };
 
@@ -172,4 +205,3 @@ body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
   width: 100%; padding: 12px; font-size: 16px; margin-top: 10px;
 }
 </style>
-

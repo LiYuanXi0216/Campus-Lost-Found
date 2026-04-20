@@ -17,11 +17,16 @@ public class UserService {
     private final UserMapper userMapper;
     private final EmailService emailService;
     private final ItemPostMapper itemPostMapper;
+    private final AppCommentService commentService;
 
-    public UserService(UserMapper userMapper, EmailService emailService, ItemPostMapper itemPostMapper) {
+    public UserService(UserMapper userMapper,
+                       EmailService emailService,
+                       ItemPostMapper itemPostMapper,
+                       AppCommentService commentService) {
         this.userMapper = userMapper;
         this.emailService = emailService;
         this.itemPostMapper = itemPostMapper;
+        this.commentService = commentService;
     }
 
     // 功能 1：用户注册 (带邮箱验证码功能)
@@ -107,6 +112,7 @@ public class UserService {
         QueryWrapper<ItemPost> postWrapper = new QueryWrapper<>();
         postWrapper.eq("publisher_id", userId.toString());
         long postCount = itemPostMapper.selectCount(postWrapper);
+        long commentCount = commentService.countCommentsByUser(userId);
 
         // 5. 封装返回结果
         Map<String, Object> profile = new HashMap<>();
@@ -115,7 +121,7 @@ public class UserService {
         // 预留统计模块：目前只有 postCount 是真实的
         Map<String, Object> stats = new HashMap<>();
         stats.put("postCount", postCount);
-        stats.put("commentCount", 0);      // 预留未来评论数
+        stats.put("commentCount", commentCount);
         stats.put("subscriptionCount", 0); // 预留未来订阅数
         profile.put("stats", stats);
 
