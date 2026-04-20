@@ -38,4 +38,6 @@ public class ItemPost {
 
     private java.time.LocalDateTime createTime;
     private String publisherId;
+
+
 }
