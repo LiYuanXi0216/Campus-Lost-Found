@@ -18,4 +18,6 @@ public class CampusBuilding {
     private String aliases;
     private Double centerLat;
     private Double centerLng;
+
+
 }

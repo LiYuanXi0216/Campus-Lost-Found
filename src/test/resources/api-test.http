@@ -370,7 +370,7 @@ Content-Type: application/json
 ### -----------------------------------------
 
 ### 3. 测试主动推荐 (假设刚才那个找耳机的 LOST 帖子 ID 是 1)
-GET http://localhost:8080/api/posts/13/recommendations
+GET http://localhost:8080/api/posts/2/recommendations
 Authorization: {{my_token}}
 ### -> 它会把上面刚捡到的那个耳机帖子给你列出来！
 

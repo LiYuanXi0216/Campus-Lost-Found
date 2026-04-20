@@ -97,4 +97,21 @@ public class UserController {
         }
         return result;
     }
+
+    // ================= 新增：修改头像 API =================
+    @PutMapping("/avatar")
+    public Map<String, Object> updateAvatar(@RequestBody Map<String, String> params, jakarta.servlet.http.HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Long userId = (Long) request.getAttribute("currentUserId");
+            String avatarUrl = params.get("avatar");
+            userService.updateAvatar(userId, avatarUrl);
+            result.put("success", true);
+            result.put("message", "头像更新成功");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
 }
