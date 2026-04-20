@@ -7,6 +7,8 @@ import cn.edu.cug.campuslostfound.entity.CampusBuilding;
 import cn.edu.cug.campuslostfound.mapper.CampusBuildingMapper;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.util.StringUtils; // 引入Spring自带的工具类
@@ -187,19 +189,51 @@ public class ItemPostService {
         return post;
     }
 
+    // ==========================================
+    // 🚀 终极版：基于 AI 视觉标签的智能推荐引擎
+    // ==========================================
     public List<ItemPost> getRecommendations(Long postId) {
         ItemPost myPost = mapper.selectById(postId);
         if (myPost == null) throw new RuntimeException("帖子不存在");
 
-        // 核心逻辑 1：反转类型 (如果是寻找，就去招领里找)
+        // 1. 寻找对立面 (丢了找捡的，捡了找丢的)
         String oppositeType = myPost.getType().equals("LOST") ? "FOUND" : "LOST";
+        List<String> searchWords = new ArrayList<>();
 
-        // 核心逻辑 2：提取关键分词 (简单策略：按空格切分标题，取前两个词)
-        String[] words = myPost.getTitle().split("\\s+");
-        String searchKeyword = words[0]; // 这里用第一个词去模糊搜索
+        // 2. 核心黑科技：尝试提取火山引擎生成的 AI 标签！
+        String desc = myPost.getDescription();
+        if (desc != null && desc.contains("【AI识别标签：")) {
+            int start = desc.indexOf("【AI识别标签：") + 8;
+            int end = desc.indexOf("】", start);
+            if (end > start) {
+                // 将 "电源适配器,充电器,联想" 切分成数组
+                String[] tags = desc.substring(start, end).split("[,，]");
+                for (String t : tags) {
+                    if (!t.trim().isEmpty()) searchWords.add(t.trim());
+                }
+            }
+        }
 
-        // 核心逻辑 3：调用我们上一轮写好的无敌检索引擎
-        // 我们放宽时间要求，只匹配类型、关键词和地点
-        return searchPosts(oppositeType, searchKeyword, myPost.getBuildingId(), null, null);
+        // 3. 降级方案：如果这个帖子没发图片（没有 AI 标签），就用空格切分标题
+        if (searchWords.isEmpty()) {
+            searchWords.addAll(Arrays.asList(myPost.getTitle().split("\\s+")));
+        }
+
+        // 4. 构建超级查询包装器
+        QueryWrapper<ItemPost> wrapper = new QueryWrapper<>();
+        wrapper.eq("type", oppositeType);
+
+        // 只要别人的帖子（标题或描述）命中了我的任何一个 AI 标签，就强行抓取过来！
+        if (!searchWords.isEmpty()) {
+            wrapper.and(w -> {
+                for (String kw : searchWords) {
+                    w.like("title", kw).or().like("description", kw);
+                }
+            });
+        }
+
+        // 推荐结果按时间倒序
+        wrapper.orderByDesc("create_time");
+        return mapper.selectList(wrapper);
     }
 }
