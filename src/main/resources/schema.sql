@@ -84,3 +84,21 @@ CREATE TABLE `app_message` (
 
 -- 2. 订阅管理增强 (确保索引)
 ALTER TABLE `post_subscription` ADD INDEX `idx_user_id` (`user_id`);
+
+-- 5. 评论表（评论与回复共用同一张表，便于统一查询与扩展）
+CREATE TABLE `app_comment` (
+                               `id` bigint NOT NULL AUTO_INCREMENT,
+                               `publisher_id` bigint NOT NULL COMMENT '评论发布者用户ID',
+                               `post_id` bigint NOT NULL COMMENT '所依附的帖子ID',
+                               `is_reply` tinyint(1) DEFAULT 0 COMMENT '是否为回复：0-顶级评论，1-回复',
+                               `parent_comment_id` bigint DEFAULT NULL COMMENT '直接回复的那条评论ID',
+                               `root_comment_id` bigint DEFAULT NULL COMMENT '所属顶级评论ID，便于把多层回复归拢在同一评论串下',
+                               `content` text COMMENT '评论文字内容',
+                               `image_url` varchar(255) DEFAULT NULL COMMENT '评论图片URL（最多一张）',
+                               `create_time` datetime NOT NULL COMMENT '发布时间',
+                               `like_count` int DEFAULT 0 COMMENT '点赞数',
+                               PRIMARY KEY (`id`),
+                               INDEX `idx_comment_post` (`post_id`, `create_time`),
+                               INDEX `idx_comment_root` (`root_comment_id`, `create_time`),
+                               INDEX `idx_comment_parent` (`parent_comment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帖子评论表（评论与回复统一存储）';
