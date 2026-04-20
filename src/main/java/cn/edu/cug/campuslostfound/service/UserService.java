@@ -121,4 +121,13 @@ public class UserService {
 
         return profile;
     }
+
+    // ================= 新增：修改头像 =================
+    public void updateAvatar(Long userId, String avatarUrl) {
+        User user = userMapper.selectById(userId);
+        if (user != null) {
+            user.setAvatar(avatarUrl);
+            userMapper.updateById(user);
+        }
+    }
 }

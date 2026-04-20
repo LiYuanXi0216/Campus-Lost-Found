@@ -4,6 +4,7 @@ import cn.edu.cug.campuslostfound.interceptor.AdminInterceptor;
 import cn.edu.cug.campuslostfound.interceptor.AuthenticationInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -17,6 +18,19 @@ public class WebConfig implements WebMvcConfigurer {
     private AuthenticationInterceptor authInterceptor;
     @Autowired
     private AdminInterceptor adminInterceptor;
+
+    // ==========================================
+    // 🚀 终极杀招：全局跨域配置 (Nuke all CORS issues!)
+    // ==========================================
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**") // 匹配所有的 /api 接口
+                .allowedOriginPatterns("*") // 允许所有前端地址跨域
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 💡 明确允许 PUT 和 OPTIONS
+                .allowedHeaders("*") // 允许携带任何自定义请求头 (如 Authorization)
+                .allowCredentials(true) // 允许携带 Cookie/Token
+                .maxAge(3600); // 预检请求的缓存时间（秒），让浏览器不用每次都发 OPTIONS
+    }
 
     /**
      * 功能 1：配置拦截器规则 (本次新增)
