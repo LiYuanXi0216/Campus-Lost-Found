@@ -144,7 +144,7 @@ public class AppCommentService {
             return new ArrayList<>();
         }
 
-        // 2. 先把涉及到的用户一次性查出来，再补充昵称和头像，减少重复查库
+        // 2. 先把涉及到的用户一次性查出来，再补充昵称和头像，载入点赞状态，减少重复查库
         Map<Long, User> userMap = buildUserMap(allComments);
         Map<Long, Boolean> likeStateMap = buildLikeStateMap(allComments, currentUserId);
 
@@ -304,7 +304,7 @@ public class AppCommentService {
 
     // 构建“当前用户对哪些评论点过赞”的映射。
     // 返回结果形如：commentId -> true
-    // 前端拿到后就能直接决定按钮是空心还是实心状态。
+    // 前端拿到后就能直接决定点赞按钮的样式。
     private Map<Long, Boolean> buildLikeStateMap(List<AppComment> comments, Long currentUserId) {
         Map<Long, Boolean> likeStateMap = new HashMap<>();
         if (currentUserId == null || comments.isEmpty()) {
@@ -361,7 +361,7 @@ public class AppCommentService {
     private void pushCommentNotification(AppComment comment, ItemPost post) {
         Long currentUserId = comment.getPublisherId();
 
-        // 顶级评论：提醒帖子作者有人来互动了
+        // 顶级评论：提醒帖子作者有人发表了评论了
         if (!Boolean.TRUE.equals(comment.getIsReply())) {
             Long postOwnerId = Long.valueOf(post.getPublisherId());
             if (!postOwnerId.equals(currentUserId)) {
