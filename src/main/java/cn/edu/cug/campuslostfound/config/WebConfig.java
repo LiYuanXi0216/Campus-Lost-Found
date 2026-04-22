@@ -43,6 +43,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/api/users/login", "/api/users/register", "/api/users/send-code")
                 .excludePathPatterns("/api/admin/**") // ！！把 admin 的路径从普通保安这里排除，交给内场保安管！！
                 .excludePathPatterns("/api/posts/search", "/api/posts/type/**")
+                .excludePathPatterns("/api/comments/post/**")
                 .excludePathPatterns("/api/buildings")
                 .excludePathPatterns("/uploads/**");
 
