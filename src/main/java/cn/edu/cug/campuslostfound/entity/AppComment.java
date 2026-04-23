@@ -34,6 +34,7 @@ public class AppComment {
     private LocalDateTime createTime; // 评论创建时间
     private Integer likeCount; // 当前累计点赞数
 
+    // 数据库中不会存在的类成员，用于辅助业务功能实现
     @TableField(exist = false)
     private String publisherName; // 前端展示用：发布者昵称 / 用户名
 
