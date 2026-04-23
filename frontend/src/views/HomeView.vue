@@ -201,7 +201,12 @@
             <template v-for="comment in visibleComments" :key="comment.id">
               <article class="comment-card">
                 <div class="comment-avatar-wrap">
-                  <img :src="comment.publisherAvatar || defaultAvatar(comment.publisherName)" class="comment-avatar" />
+                  <img
+                      :src="comment.publisherAvatar || defaultAvatar(comment.publisherName)"
+                      class="comment-avatar"
+                      @click="startChatWithUser(comment)"
+                      style="cursor: pointer;"
+                  />
                 </div>
 
                 <div class="comment-body">
@@ -259,7 +264,12 @@
                   <div v-if="comment.replies && comment.replies.length > 0" class="reply-list">
                     <article v-for="reply in visibleReplies(comment)" :key="reply.id" class="reply-card">
                       <div class="comment-avatar-wrap">
-                        <img :src="reply.publisherAvatar || defaultAvatar(reply.publisherName)" class="comment-avatar small" />
+                        <img
+                            :src="reply.publisherAvatar || defaultAvatar(reply.publisherName)"
+                            class="comment-avatar small"
+                            @click="startChatWithUser(reply)"
+                            style="cursor: pointer;"
+                        />
                       </div>
 
                       <div class="comment-body">
@@ -928,6 +938,32 @@ const formatDateTime = (value) => {
   // 后端当前返回的是 ISO 风格时间串，这里直接转成更适合界面阅读的格式。
   if (!value) return '刚刚';
   return value.replace('T', ' ').slice(0, 16);
+};
+
+// =========================
+// 新增：点击评论头像跳转到聊天
+// =========================
+const startChatWithUser = (commentOrReply) => {
+  // 从评论对象里获取用户ID（根据你后端返回的字段名调整）
+  const targetUserId = commentOrReply.publisherId || commentOrReply.userId;
+
+  if (!targetUserId) {
+    alert('无法获取该用户信息');
+    return;
+  }
+
+  // 1. 关闭详情弹窗
+  closeDetailModal();
+
+  // 2. 调用 App.vue 暴露的方法，直接切换标签
+  if (window.switchToChatTab) {
+    window.switchToChatTab();
+  }
+
+  // 3. 调用 ChatView 的全局方法，选中用户
+  if (window.startChatWithUserId) {
+    window.startChatWithUserId(targetUserId);
+  }
 };
 </script>
 

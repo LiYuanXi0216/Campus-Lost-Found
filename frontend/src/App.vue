@@ -5,6 +5,12 @@
         <h1 class="zh-logo">Campus Lost&Found</h1>
         <nav class="zh-nav">
           <a :class="{ active: activeTab === 'home' }" @click="activeTab = 'home'">首页大厅</a>
+
+          <!-- 👇 新增 聊天入口（登录后显示） -->
+          <a v-if="isLoggedIn" :class="{ active: activeTab === 'chat' }" @click="activeTab = 'chat'">
+            消息聊天
+          </a>
+
           <a v-if="isLoggedIn" :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">
             个人中心 <span v-if="unreadCount > 0" class="red-dot"></span>
           </a>
@@ -24,8 +30,13 @@
 
     <main class="zh-main">
       <HomeView v-if="activeTab === 'home'" />
+
+      <!-- 👇 新增聊天页面 -->
+      <ChatView v-if="activeTab === 'chat'" />
+
       <ProfileView v-if="activeTab === 'profile'" @update-unread="fetchUnreadCount" />
-      <AdminView v-if="activeTab === 'admin'" /> </main>
+      <AdminView v-if="activeTab === 'admin'" />
+    </main>
 
     <div v-if="showAuthModal" class="zh-modal-mask">
       <div class="zh-modal">
@@ -64,22 +75,36 @@
 import { ref, onMounted } from 'vue';
 import HomeView from './views/HomeView.vue';
 import ProfileView from './views/ProfileView.vue';
-import AdminView from './views/AdminView.vue'; // 👇 新增导入
+import AdminView from './views/AdminView.vue';
+
+// 👇 导入聊天页面
+import ChatView from './views/ChatView.vue';
 
 const API_BASE = 'http://localhost:8080/api';
 const activeTab = ref('home');
 const isLoggedIn = ref(false);
 const currentUser = ref({});
-const unreadCount = ref(0); // 消息红点
+const unreadCount = ref(0);
 
 const showAuthModal = ref(false);
 const isRegisterMode = ref(false);
 const authForm = ref({ username: '', password: '', email: '', code: '', nickname: '' });
-const isAdmin = ref(false); // 👇 新增状态
+const isAdmin = ref(false);
 
 onMounted(() => {
   checkLoginState();
 });
+
+window.addEventListener('switch-to-chat', (event) => {
+  // 1. 切换标签到聊天页
+  activeTab.value = 'chat';
+
+  // 2. 如果事件里带了 userId，也可以在这里直接调用全局方法（双重保险）
+  if (event.detail?.userId && window.startChatWithUserId) {
+    window.startChatWithUserId(event.detail.userId);
+  }
+});
+
 
 const checkLoginState = () => {
   const token = localStorage.getItem('token');
@@ -87,7 +112,7 @@ const checkLoginState = () => {
   if (token && userStr) {
     isLoggedIn.value = true;
     currentUser.value = JSON.parse(userStr);
-    isAdmin.value = currentUser.value.role === 'ADMIN'; // 👇 新增权限判断
+    isAdmin.value = currentUser.value.role === 'ADMIN';
     fetchUnreadCount();
   } else {
     isLoggedIn.value = false;
@@ -141,6 +166,11 @@ const handleAuthAction = async () => {
     alert(data.message);
   }
 };
+
+// 👇 新增：暴露一个全局方法，让 HomeView 可以直接调用切换标签
+window.switchToChatTab = () => {
+  activeTab.value = 'chat';
+};
 </script>
 
 <style>
@@ -151,7 +181,7 @@ a:hover { color: #056de8; }
 h1, h2, h3, p { margin: 0; }
 
 /* 顶部导航 */
-.zh-header { background: #fff; box-shadow: 0 1px 3px rgba(18,18,18,.1); position: sticky; top: 0; z-index: 100; height: 52px; display: flex; justify-content: center; }
+.zh-header { background: #fff; box-shadow: 0 1px 3px rgba(18,18,.1); position: sticky; top: 0; z-index: 100; height: 52px; display: flex; justify-content: center; }
 .zh-header-inner { width: 1000px; display: flex; align-items: center; padding: 0 16px; }
 .zh-logo { color: #056de8; font-size: 22px; font-weight: bold; margin-right: 30px; }
 .zh-nav { display: flex; gap: 30px; flex-grow: 1; }
@@ -166,7 +196,7 @@ h1, h2, h3, p { margin: 0; }
 .zh-main { width: 1000px; margin: 10px auto; padding: 0 16px; box-sizing: border-box; }
 
 /* 卡片风格 */
-.zh-card { background: #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(18,18,18,.1); padding: 20px; margin-bottom: 10px; }
+.zh-card { background: #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(18,18,.1); padding: 20px; margin-bottom: 10px; }
 
 /* 表单与输入框 */
 .zh-input { width: 100%; box-sizing: border-box; padding: 8px 12px; font-size: 14px; border: 1px solid #ebebeb; border-radius: 3px; background: #f6f6f6; transition: .2s; outline: none; margin-bottom: 15px; }
@@ -182,7 +212,7 @@ select.zh-input { appearance: none; cursor: pointer; }
 .zh-btn-block { width: 100%; padding: 10px; font-size: 15px; }
 
 /* 弹窗风格 */
-.zh-modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(18,18,18,.65); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.zh-modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(18,18,.65); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .zh-modal { background: #fff; width: 400px; border-radius: 2px; box-shadow: 0 5px 20px rgba(0,0,0,.1); position: relative; }
 .zh-modal-close { position: absolute; right: 15px; top: 15px; background: none; border: none; font-size: 24px; color: #8590a6; cursor: pointer; }
 .zh-modal-header { padding: 24px 24px 0; text-align: center; }
@@ -206,7 +236,7 @@ input[type="date"].zh-input::-webkit-calendar-picker-indicator {
   opacity: 0.5;
   transition: .2s;
 }
-input[type="date"].zh-input::-webkit-calendar-picker-indicator:hover {
+input[type="date"].zh-input:focus::-webkit-calendar-picker-indicator {
   opacity: 1;
 }
 </style>

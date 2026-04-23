@@ -41,6 +41,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/users/login", "/api/users/register", "/api/users/send-code")
+                .excludePathPatterns("/api/users/list") // 👈 新增：排除用户列表接口
+                .excludePathPatterns("/api/chat/**")
                 .excludePathPatterns("/api/admin/**") // ！！把 admin 的路径从普通保安这里排除，交给内场保安管！！
                 .excludePathPatterns("/api/posts/search", "/api/posts/type/**")
                 .excludePathPatterns("/api/comments/post/**")

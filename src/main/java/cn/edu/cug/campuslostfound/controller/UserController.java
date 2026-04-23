@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List; // 必须加！！！
 import java.util.Map;
 
 @RestController
@@ -113,5 +114,11 @@ public class UserController {
             result.put("message", e.getMessage());
         }
         return result;
+    }
+
+    // ================= 新增：获取所有用户列表（供聊天联系人用） =================
+    @GetMapping("/list")
+    public List<User> getAllUsers() {
+        return userService.list();
     }
 }
