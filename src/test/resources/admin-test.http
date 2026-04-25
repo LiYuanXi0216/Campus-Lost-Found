@@ -1,0 +1,45 @@
+### 1. 管理员登录
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {%
+    // 调试打印，确认拿到返回值
+    console.log("登录接口返回结果：", response.body)
+    // 全局保存管理员token
+    client.global.set("admin_token", response.body.token);
+%}
+
+
+### 2. 管理员查看数据看板
+GET http://localhost:8080/api/admin/dashboard/stats
+Authorization: {{admin_token}}
+
+
+### 3. 管理员强制下架帖子（修改ID测试）
+PUT http://localhost:8080/api/admin/posts/2/block
+Authorization: {{admin_token}}
+
+
+### 4. 查看帖子列表
+GET http://localhost:8080/api/posts
+Authorization: {{admin_token}}
+
+
+### 5. 管理员批量删除帖子
+DELETE http://localhost:8080/api/admin/posts/batch
+Authorization: {{admin_token}}
+Content-Type: application/json
+
+{
+  "ids": [7, 8]
+}
+
+
+### 6. 删除后再次查询列表
+GET http://localhost:8080/api/posts
+Authorization: {{admin_token}}
