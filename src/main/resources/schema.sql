@@ -85,6 +85,31 @@ CREATE TABLE `app_message` (
 -- 2. 订阅管理增强 (确保索引)
 ALTER TABLE `post_subscription` ADD INDEX `idx_user_id` (`user_id`);
 
+-- 会话表：存储用户间的聊天会话
+CREATE TABLE `chat_session` (
+                                `id` bigint NOT NULL AUTO_INCREMENT COMMENT '会话ID',
+                                `user1_id` bigint NOT NULL COMMENT '用户1ID',
+                                `user2_id` bigint NOT NULL COMMENT '用户2ID',
+                                `last_msg_id` bigint DEFAULT NULL COMMENT '最后一条消息ID',
+                                `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                PRIMARY KEY (`id`),
+                                UNIQUE KEY `uk_user_pair` (`user1_id`, `user2_id`) COMMENT '保证用户对唯一'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天会话表';
+
+-- 消息表：存储用户间的聊天消息
+CREATE TABLE `chat_message` (
+                                `id` bigint NOT NULL AUTO_INCREMENT COMMENT '消息ID',
+                                `session_id` bigint NOT NULL COMMENT '会话ID',
+                                `sender_id` bigint NOT NULL COMMENT '发送者ID',
+                                `receiver_id` bigint NOT NULL COMMENT '接收者ID',
+                                `content` varchar(2000) NOT NULL COMMENT '消息内容',
+                                `send_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+                                `is_read` tinyint DEFAULT 0 COMMENT '是否已读（0-未读，1-已读）',
+                                PRIMARY KEY (`id`),
+                                KEY `idx_session_id` (`session_id`),
+                                KEY `idx_sender_receiver` (`sender_id`, `receiver_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天消息表';
+
 -- 5. 评论表（评论与回复共用同一张表，便于统一查询与扩展）
 -- 设计思路：
 -- 1. 顶级评论和回复都存在同一张表里，避免拆两张表带来的查询和维护复杂度

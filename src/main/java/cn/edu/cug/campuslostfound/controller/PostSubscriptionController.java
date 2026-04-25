@@ -34,5 +34,9 @@ public class PostSubscriptionController {
             mapper.deleteById(id);
         }
         return Collections.singletonMap("success", true);
+
+
+
+
     }
 }

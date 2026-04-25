@@ -1,6 +1,7 @@
-// import './assets/main.css'
-
 import { createApp } from 'vue'
+import { createPinia } from 'pinia' // 新增
 import App from './App.vue'
 
-createApp(App).mount('#app')
+const app = createApp(App)
+app.use(createPinia()) // 新增
+app.mount('#app')

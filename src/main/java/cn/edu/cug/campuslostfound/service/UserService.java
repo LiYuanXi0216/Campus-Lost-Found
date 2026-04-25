@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -135,5 +136,10 @@ public class UserService {
             user.setAvatar(avatarUrl);
             userMapper.updateById(user);
         }
+    }
+
+    public List<User> list() {
+        // 查询数据库里所有的用户
+        return userMapper.selectList(null);
     }
 }
