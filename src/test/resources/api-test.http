@@ -392,3 +392,41 @@ Authorization: {{my_token}}
 # 这一步目前由后端代码在评论功能开发时自动触发
 # 你可以尝试在数据库里手动插入一条 app_message 数据，然后执行第3步，看看能否查出来。
 
+### =========================================
+### 管理员特权大测试
+### =========================================
+
+### 0. 使用管理员账号登录获取 VIP Token
+POST http://localhost:8080/api/users/login
+Content-Type: application/json
+
+{
+  "username": "liyuanxi",
+  "password": "123456"
+}
+> {% client.global.set("admin_token", response.body.token); %}
+
+### -----------------------------------------
+
+### 1. 测试：获取全站数据大盘看板
+GET http://localhost:8080/api/admin/dashboard/stats
+Authorization: {{admin_token}}
+
+### -----------------------------------------
+
+### 2. 测试：单条删除违规帖子
+### (请去数据库找一个别人发的帖子ID填在下面，比如假设为 10)
+DELETE http://localhost:8080/api/admin/posts/13
+Authorization: {{admin_token}}
+
+### -----------------------------------------
+
+### 3. 测试：高能批量删除
+### (请去数据库找几个不用的测试帖子ID填入数组，比如 11, 12, 13)
+DELETE http://localhost:8080/api/admin/posts/batch
+Authorization: {{admin_token}}
+Content-Type: application/json
+
+{
+  "ids": [14, 15]
+}

@@ -1,23 +1,258 @@
 <template>
   <div class="admin-container">
-    <div class="zh-card">
-      <h2 style="margin-bottom: 20px; font-size: 22px;">🛡️ 管理员控制台</h2>
-      <p style="color: #8590a6; margin-bottom: 20px;">欢迎进入系统后台。这里未来将展示全站数据统计和违规帖子审核列表。</p>
 
-      <div style="display: flex; gap: 20px;">
-        <div class="zh-card" style="flex: 1; background: #f8f9fa; border: 1px solid #ebebeb;">
-          <h3 style="color: #8590a6; font-size: 14px;">今日活跃度</h3>
-          <h2 style="font-size: 28px; color: #056de8; margin-top: 10px;">158</h2>
+    <div class="stat-grid">
+      <div class="zh-card stat-card">
+        <div class="stat-title">总计用户 (人)</div>
+        <div class="stat-value text-primary">{{ stats.totalUsers || 0 }}</div>
+      </div>
+      <div class="zh-card stat-card">
+        <div class="stat-title">全站帖子 (条)</div>
+        <div class="stat-value">{{ stats.totalPosts || 0 }}</div>
+      </div>
+      <div class="zh-card stat-card">
+        <div class="stat-title">已解决 (条)</div>
+        <div class="stat-value text-success">{{ stats.resolvedPosts || 0 }}</div>
+      </div>
+      <div class="zh-card stat-card">
+        <div class="stat-title">寻/招中 (条)</div>
+        <div class="stat-value text-danger">{{ stats.pendingPosts || 0 }}</div>
+      </div>
+    </div>
+
+    <div class="admin-layout">
+      <div class="zh-card main-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">内容管控面板</h2>
+          <div class="panel-actions">
+            <button class="zh-btn zh-btn-outline" @click="fetchPosts">刷新数据</button>
+            <button
+                class="zh-btn zh-btn-danger"
+                :disabled="selectedPostIds.length === 0"
+                @click="batchDelete"
+            >
+              批量删除 ({{ selectedPostIds.length }})
+            </button>
+          </div>
         </div>
-        <div class="zh-card" style="flex: 1; background: #fcf4f4; border: 1px solid #fbdcdb;">
-          <h3 style="color: #8590a6; font-size: 14px;">待审核违规帖子</h3>
-          <h2 style="font-size: 28px; color: #f1403c; margin-top: 10px;">12</h2>
+
+        <div class="table-container">
+          <table class="zh-table">
+            <thead>
+            <tr>
+              <th width="40"><input type="checkbox" @change="toggleSelectAll" :checked="isAllSelected" /></th>
+              <th width="60">ID</th>
+              <th width="60">类型</th>
+              <th>帖子标题</th>
+              <th width="120">发布者 ID</th>
+              <th width="150">发布时间</th>
+              <th width="80">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="posts.length === 0"><td colspan="7" class="empty-state">暂无帖子数据</td></tr>
+            <tr v-for="post in posts" :key="post.id" :class="{'selected-row': selectedPostIds.includes(post.id)}">
+              <td><input type="checkbox" :value="post.id" v-model="selectedPostIds" /></td>
+              <td class="text-gray">{{ post.id }}</td>
+              <td>
+                  <span :class="['tag', post.type === 'LOST' ? 'tag-red' : 'tag-green']">
+                    {{ post.type === 'LOST' ? '寻物' : '招领' }}
+                  </span>
+              </td>
+              <td class="td-title">{{ post.title }}</td>
+              <td class="text-gray">{{ post.publisherId }}</td>
+              <td class="text-gray">{{ formatDate(post.createTime) }}</td>
+              <td>
+                <a class="action-link text-danger" @click="deletePost(post.id)">删除</a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="zh-card side-panel">
+        <div class="panel-header" style="padding-bottom: 15px; border-bottom: 1px solid #f0f2f7;">
+          <h2 class="panel-title">安全审计日志</h2>
+        </div>
+        <div class="log-list">
+          <div v-if="logs.length === 0" class="empty-state" style="padding: 20px 0;">暂无操作记录</div>
+          <div v-for="log in logs" :key="log.id" class="log-item">
+            <div class="log-time">{{ formatDate(log.createTime) }}</div>
+            <div class="log-action">
+              <span class="tag tag-gray">管理员 ID: {{ log.adminId }}</span>
+              <span class="text-danger" style="font-size: 13px; font-weight: bold; margin-left: 5px;">{{ log.actionType }}</span>
+            </div>
+            <div class="log-detail">{{ log.detail }}</div>
+          </div>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+
+const API_BASE = 'http://localhost:8080/api';
+
+const stats = ref({});
+const posts = ref([]);
+const logs = ref([]);
+const selectedPostIds = ref([]);
+
+const getHeaders = () => ({
+  'Authorization': localStorage.getItem('token') || '',
+  'Content-Type': 'application/json'
+});
+
+onMounted(() => {
+  fetchDashboardData();
+});
+
+// 聚合拉取大盘数据
+const fetchDashboardData = () => {
+  fetchStats();
+  fetchPosts();
+  fetchLogs();
+};
+
+// 1. 拉取统计数据
+const fetchStats = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/admin/dashboard/stats`, { headers: getHeaders() });
+    const data = await res.json();
+    if (data.success) stats.value = data.data;
+  } catch (e) {}
+};
+
+// 2. 拉取全站帖子 (复用现有的搜索接口，默认拉取全部)
+const fetchPosts = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/posts/search?type=ALL`, { headers: getHeaders() });
+    posts.value = await res.json();
+    selectedPostIds.value = []; // 刷新后清空选中状态
+  } catch (e) {}
+};
+
+// 3. 拉取审计日志
+const fetchLogs = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/admin/logs`, { headers: getHeaders() });
+    const data = await res.json();
+    if (data.success) logs.value = data.data;
+  } catch (e) {}
+};
+
+// --- 表格交互逻辑 ---
+
+const isAllSelected = computed(() => {
+  return posts.value.length > 0 && selectedPostIds.value.length === posts.value.length;
+});
+
+const toggleSelectAll = (e) => {
+  if (e.target.checked) {
+    selectedPostIds.value = posts.value.map(p => p.id);
+  } else {
+    selectedPostIds.value = [];
+  }
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  return dateStr.replace('T', ' ').substring(0, 16); // 去除毫秒，格式化为 YYYY-MM-DD HH:mm
+};
+
+// --- 核心特权操作逻辑 ---
+
+const deletePost = async (id) => {
+  if (!confirm(`高危操作：确认强制删除帖子 ID [${id}] 吗？该操作将被记入审计日志！`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/posts/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('删除成功！');
+      fetchDashboardData(); // 刷新三大板块：统计、列表、日志
+    } else {
+      alert(data.message);
+    }
+  } catch (e) { alert('网络错误'); }
+};
+
+const batchDelete = async () => {
+  if (selectedPostIds.value.length === 0) return;
+  if (!confirm(`高危操作：确认批量删除选中的 ${selectedPostIds.value.length} 条帖子吗？`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/posts/batch`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+      body: JSON.stringify({ ids: selectedPostIds.value })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('批量删除成功！');
+      fetchDashboardData();
+    } else {
+      alert(data.message);
+    }
+  } catch (e) { alert('网络错误'); }
+};
+</script>
+
 <style scoped>
-.admin-container { padding-top: 10px; }
+.admin-container { padding-bottom: 40px; }
+
+/* 顶部统计卡片 */
+.stat-grid { display: flex; gap: 15px; margin-bottom: 15px; }
+.stat-card { flex: 1; padding: 24px; display: flex; flex-direction: column; justify-content: center; }
+.stat-title { font-size: 14px; color: #8590a6; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: bold; font-family: Helvetica, Arial, sans-serif; }
+.text-primary { color: #056de8; }
+.text-success { color: #0084ff; }
+.text-danger { color: #f1403c; }
+
+/* 主体布局 */
+.admin-layout { display: flex; gap: 15px; align-items: flex-start; }
+.main-panel { flex: 1; min-width: 0; padding: 0; overflow: hidden; }
+.side-panel { width: 320px; flex-shrink: 0; }
+
+.panel-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; }
+.panel-title { font-size: 16px; font-weight: 600; color: #121212; }
+.panel-actions { display: flex; gap: 10px; }
+
+/* 知乎风数据表格 */
+.table-container { width: 100%; overflow-x: auto; }
+.zh-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+.zh-table th { background: #f8f9fa; color: #8590a6; font-weight: normal; padding: 12px 15px; border-top: 1px solid #ebebeb; border-bottom: 1px solid #ebebeb; }
+.zh-table td { padding: 12px 15px; border-bottom: 1px solid #f0f2f7; color: #121212; vertical-align: middle; }
+.zh-table tr:hover td { background: #fcfcfc; }
+.zh-table tr.selected-row td { background: rgba(5,109,232,.03); }
+
+.td-title { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.text-gray { color: #8590a6; font-size: 13px; }
+.action-link { cursor: pointer; transition: .2s; }
+.action-link:hover { text-decoration: underline; }
+
+/* 标签样式复用 */
+.tag { padding: 2px 6px; border-radius: 2px; font-size: 12px; font-weight: normal; }
+.tag-red { color: #f1403c; background: rgba(241,64,60,.1); }
+.tag-green { color: #0084ff; background: rgba(0,132,255,.1); }
+.tag-gray { color: #8590a6; background: #f6f6f6; border: 1px solid #ebebeb; }
+
+/* 按钮红/蓝风格重写 */
+.zh-btn-danger { background: #f1403c; color: #fff; }
+.zh-btn-danger:hover:not(:disabled) { background: #d93a36; }
+.zh-btn-danger:disabled { background: #f9c4c3; cursor: not-allowed; }
+
+/* 日志流样式 */
+.log-list { max-height: 600px; overflow-y: auto; padding: 0 20px 20px; }
+.log-item { padding: 15px 0; border-bottom: 1px solid #f0f2f7; }
+.log-time { font-size: 12px; color: #8590a6; margin-bottom: 6px; font-family: monospace; }
+.log-action { margin-bottom: 8px; }
+.log-detail { font-size: 13px; color: #444; line-height: 1.5; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+.empty-state { text-align: center; color: #8590a6; padding: 40px; }
 </style>
