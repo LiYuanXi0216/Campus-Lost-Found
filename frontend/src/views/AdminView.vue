@@ -93,9 +93,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, inject } from 'vue';
 
 const API_BASE = 'http://localhost:8080/api';
+const showMessage = inject('showMessage');
+const showConfirm = inject('showConfirm');
 
 const stats = ref({});
 const posts = ref([]);
@@ -167,7 +169,9 @@ const formatDate = (dateStr) => {
 // --- 核心特权操作逻辑 ---
 
 const deletePost = async (id) => {
-  if (!confirm(`高危操作：确认强制删除帖子 ID [${id}] 吗？该操作将被记入审计日志！`)) return;
+  //if (!confirm(`高危操作：确认强制删除帖子 ID [${id}] 吗？该操作将被记入审计日志！`)) return;
+  const isConfirmed = await showConfirm(`高危操作：确认强制删除帖子 ID [${id}] 吗？该操作将被记入审计日志！`, '管理员操作确认');
+  if (!isConfirmed) return;
   try {
     const res = await fetch(`${API_BASE}/admin/posts/${id}`, {
       method: 'DELETE',
@@ -175,17 +179,25 @@ const deletePost = async (id) => {
     });
     const data = await res.json();
     if (data.success) {
-      alert('删除成功！');
+      // alert('删除成功！');
+      showMessage('删除成功！', 'success');
       fetchDashboardData(); // 刷新三大板块：统计、列表、日志
     } else {
-      alert(data.message);
+      //alert(data.message);
+      showMessage(data.message, 'error');
     }
-  } catch (e) { alert('网络错误'); }
+  } catch (e)
+  {
+    //alert('网络错误');
+    showMessage('网络错误', 'error');
+  }
 };
 
 const batchDelete = async () => {
   if (selectedPostIds.value.length === 0) return;
-  if (!confirm(`高危操作：确认批量删除选中的 ${selectedPostIds.value.length} 条帖子吗？`)) return;
+  //if (!confirm(`高危操作：确认批量删除选中的 ${selectedPostIds.value.length} 条帖子吗？`)) return;
+  const isConfirmed = await showConfirm(`高危操作：确认批量删除选中的 ${selectedPostIds.value.length} 条帖子吗？`, '批量删除确认');
+  if (!isConfirmed) return;
   try {
     const res = await fetch(`${API_BASE}/admin/posts/batch`, {
       method: 'DELETE',
@@ -194,12 +206,17 @@ const batchDelete = async () => {
     });
     const data = await res.json();
     if (data.success) {
-      alert('批量删除成功！');
+      //alert('批量删除成功！');
+      showMessage('批量删除成功！', 'success');
       fetchDashboardData();
     } else {
-      alert(data.message);
+      //alert(data.message);
+      showMessage(data.message, 'error');
     }
-  } catch (e) { alert('网络错误'); }
+  } catch (e) {
+    //alert('网络错误');
+    showMessage('网络错误', 'error');
+  }
 };
 </script>
 

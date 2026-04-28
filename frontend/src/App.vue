@@ -68,11 +68,17 @@
         </div>
       </div>
     </div>
+    <Toast ref="toastRef" />
+    <Confirm ref="confirmRef" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+// 修改原本的第一行，加上 provide
+import { ref, onMounted, provide } from 'vue';
+// 引入刚刚建好的组件
+import Toast from './components/Toast.vue';
+import Confirm from './components/Confirm.vue'; // 👉 新增导入
 import HomeView from './views/HomeView.vue';
 import ProfileView from './views/ProfileView.vue';
 import AdminView from './views/AdminView.vue';
@@ -91,9 +97,31 @@ const isRegisterMode = ref(false);
 const authForm = ref({ username: '', password: '', email: '', code: '', nickname: '' });
 const isAdmin = ref(false);
 
+// ====== 新增：全局 Toast 控制逻辑 ======
+const toastRef = ref(null);
+const confirmRef = ref(null);
+
+const onShowMsg = (msg, type = 'info') => {
+  if (toastRef.value) {
+    toastRef.value.show(msg, type);
+  }
+};
+// 像自来水一样提供给所有子组件
+provide('showMessage', onShowMsg);
+
 onMounted(() => {
   checkLoginState();
 });
+
+// 👉 新增：封装一个全局的异步确认方法
+const onShowConfirm = (msg, title) => {
+  if (confirmRef.value) {
+    return confirmRef.value.show(msg, title);
+  }
+  return Promise.resolve(false);
+};
+
+provide('showConfirm', onShowConfirm); // 👉 向下游所有组件提供 showConfirm
 
 window.addEventListener('switch-to-chat', (event) => {
   // 1. 切换标签到聊天页
@@ -119,6 +147,8 @@ const checkLoginState = () => {
     currentUser.value = {};
     activeTab.value = 'home';
   }
+
+  window.dispatchEvent(new Event('auth-state-changed'));
 };
 
 const fetchUnreadCount = async () => {
@@ -139,31 +169,52 @@ const doLogout = () => {
 };
 
 const sendCode = async () => {
-  if (!authForm.value.email) return alert('请先填写邮箱');
-  const res = await fetch(`${API_BASE}/users/send-code`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: authForm.value.email })
-  });
-  alert((await res.json()).message);
+  if (!authForm.value.email) return onShowMsg('请先填写邮箱', 'error');
+  try {
+    const res = await fetch(`${API_BASE}/users/send-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: authForm.value.email })
+    });
+    const data = await res.json();
+    onShowMsg(data.message, data.success ? 'success' : 'error');
+  } catch (e) {
+    onShowMsg('验证码发送失败', 'error');
+  }
 };
 
 const handleAuthAction = async () => {
   const url = isRegisterMode.value ? `${API_BASE}/users/register` : `${API_BASE}/users/login`;
-  const res = await fetch(url, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(authForm.value)
-  });
-  const data = await res.json();
-  if (data.success) {
-    if (!isRegisterMode.value) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.data));
-      checkLoginState();
-      showAuthModal.value = false;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(authForm.value)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      if (!isRegisterMode.value) {
+        // ==========================================
+        // 🚨 核心逻辑：这四行代码千万不能丢！
+        // ==========================================
+        localStorage.setItem('token', data.token);              // 1. 保存令牌
+        localStorage.setItem('user', JSON.stringify(data.data));// 2. 保存用户信息
+        checkLoginState();                                      // 3. 触发系统状态更新（头像、菜单显示等）
+        showAuthModal.value = false;                            // 4. 关闭登录弹窗
+
+        onShowMsg('登录成功！', 'success'); // 视觉提示放在最后
+      } else {
+        // 注册成功逻辑
+        onShowMsg('注册成功，请登录！', 'success');
+        isRegisterMode.value = false; // 切回登录模式
+      }
     } else {
-      alert('注册成功，请登录！');
-      isRegisterMode.value = false;
+      // 密码错误、账号不存在等逻辑
+      onShowMsg(data.message, 'error');
     }
-  } else {
-    alert(data.message);
+  } catch (e) {
+    onShowMsg('网络请求异常，请检查后端是否启动', 'error');
   }
 };
 
