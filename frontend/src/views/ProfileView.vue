@@ -127,10 +127,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, inject } from 'vue';
 
 const emit = defineEmits(['update-unread']);
 const API_BASE = 'http://localhost:8080/api';
+
+// 拿到全局方法！
+const showMessage = inject('showMessage');
+const showConfirm = inject('showConfirm');
 
 const currentTab = ref('posts');
 const user = ref(JSON.parse(localStorage.getItem('user')) || {});
@@ -186,10 +190,15 @@ const uploadAvatar = async (e) => {
       if (res.ok) {
         user.value.avatar = uData.imageUrl;
         localStorage.setItem('user', JSON.stringify(user.value)); // 同步本地缓存
-        alert('头像更新成功！');
+        //alert('头像更新成功！');
+        showMessage('头像更新成功！', 'success');
       }
     }
-  } catch (err) { alert('头像上传失败'); }
+  } catch (err)
+  {
+    //alert('头像上传失败');
+    showMessage('头像上传失败', 'error');
+  }
 };
 
 // --- 帖子逻辑 ---
@@ -229,17 +238,25 @@ const submitEdit = async () => {
       method: 'PUT', headers: getHeaders(), body: JSON.stringify(payload)
     });
     if (res.ok || (await res.json()).success) {
-      alert('修改成功！');
+      //alert('修改成功！');
+      showMessage('修改成功！', 'success');
       showEditModal.value = false;
       fetchPosts();
     }
-  } catch (e) { alert('修改失败'); } finally { isSubmitting.value = false; }
+  } catch (e)
+  {
+    //alert('修改失败');
+    showMessage('修改失败', 'error');
+  } finally { isSubmitting.value = false; }
 };
 
 const deletePost = async (id) => {
-  if(!confirm('确定删除此贴？删除后不可恢复！')) return;
+  //if(!confirm('确定删除此贴？删除后不可恢复！')) return;
+  const isConfirmed = await showConfirm('确定删除此贴？删除后不可恢复！', '删除确认');
+  if (!isConfirmed) return;
   await fetch(`${API_BASE}/posts/${id}`, { method: 'DELETE', headers: getHeaders() });
   fetchPosts();
+  showMessage('删除成功', 'success');
 };
 
 // --- 订阅 & 消息逻辑 ---
@@ -248,9 +265,12 @@ const fetchSubs = async () => {
   mySubs.value = await res.json();
 };
 const deleteSub = async (id) => {
-  if(!confirm('确定取消该订阅？')) return;
+  //if(!confirm('确定取消该订阅？')) return;
+  const isConfirmed = await showConfirm('确定取消该订阅？', '取消订阅');
+  if (!isConfirmed) return;
   await fetch(`${API_BASE}/subscriptions/${id}`, { method: 'DELETE', headers: getHeaders() });
   fetchSubs();
+  showMessage('已取消订阅', 'success');
 };
 const fetchMessages = async () => {
   const res = await fetch(`${API_BASE}/messages/my`, { headers: getHeaders() });

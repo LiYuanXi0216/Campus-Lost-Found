@@ -353,13 +353,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, inject } from 'vue';
 
 const API_BASE = 'http://localhost:8080/api';
 const defaultCommentVisibleCount = 5;
 const defaultReplyVisibleCount = 2;
 const likeIconUrl = new URL('../../resources/icons/like.svg', import.meta.url).href;
 const likedIconUrl = new URL('../../resources/icons/liked.svg', import.meta.url).href;
+// 拿到全局方法！
+const showMessage = inject('showMessage');
 
 // =========================
 // 页面级状态
@@ -485,7 +487,8 @@ const handleUnauthorized = () => {
   localStorage.removeItem('user');
   syncLoginState();
   window.dispatchEvent(new Event('auth-state-changed'));
-  alert('登录状态已失效，请重新登录后再试');
+  //alert('登录状态已失效，请重新登录后再试');
+  showMessage('登录状态已失效，请重新登录后再试', 'error');
 };
 
 const fetchJson = async (url, options = {}) => {
@@ -538,8 +541,12 @@ const loadPosts = async () => {
 };
 
 const subscribeSearch = async () => {
-  if (!isLoggedIn.value) return alert('请先登录！');
-  if (!searchQuery.value.keyword && !searchQuery.value.buildingId) return alert('请至少填写关键词或选择区域！');
+  if (!isLoggedIn.value)
+    // return alert('请先登录！');
+    return showMessage('请先登录！', 'error');
+  if (!searchQuery.value.keyword && !searchQuery.value.buildingId)
+    //return alert('请至少填写关键词或选择区域！');
+    return showMessage('请至少填写关键词或选择区域！', 'error');
 
   // 订阅规则沿用当前搜索条件，所以用户在筛选后可以直接一键订阅。
   const { data, unauthorized } = await fetchJson(`${API_BASE}/posts/subscribe`, {
@@ -548,7 +555,8 @@ const subscribeSearch = async () => {
     body: JSON.stringify({ keyword: searchQuery.value.keyword, buildingId: searchQuery.value.buildingId || null })
   });
   if (unauthorized) return;
-  alert(data?.message || '订阅成功');
+  //alert(data?.message || '订阅成功');
+  showMessage(data?.message || '订阅成功', 'success');
 };
 
 const showDetail = async (post) => {
@@ -601,7 +609,9 @@ const getRecommendations = async () => {
 };
 
 const openPostModal = (post = null) => {
-  if (!isLoggedIn.value) return alert('请先登录！');
+  if (!isLoggedIn.value)
+    //return alert('请先登录！');
+    return showMessage('请先登录！', 'error');
   selectedFile.value = null;
   // 传入 post 代表编辑，否则按新建帖子初始化表单。
   if (post) {
@@ -652,7 +662,8 @@ const autoGetLocation = (event) => {
       postForm.value.latitude = pos.coords.latitude;
       postForm.value.longitude = pos.coords.longitude;
       if (btn) btn.innerText = '✅ 定位成功';
-      alert('GPS 坐标已获取成功，您还可以继续补充详细地名。');
+      //alert('GPS 坐标已获取成功，您还可以继续补充详细地名。');
+        showMessage('GPS 坐标已获取成功，您还可以继续补充详细地名。', 'success');
       if (btn) {
         setTimeout(() => {
           btn.innerText = originalText;
@@ -660,7 +671,8 @@ const autoGetLocation = (event) => {
       }
     },
     () => {
-      alert('定位失败，请检查浏览器定位权限');
+      //alert('定位失败，请检查浏览器定位权限');
+      showMessage('定位失败，请检查浏览器定位权限', 'error');
       if (btn) btn.innerText = originalText;
     }
   );
@@ -703,14 +715,17 @@ const submitPost = async () => {
 
     const success = res.ok || !!data?.success;
     if (success) {
-      alert('操作成功！');
+      //alert('操作成功！');
+      showMessage('操作成功！', 'success');
       showModal.value = false;
       loadPosts();
     } else {
-      alert(data?.message || '操作失败');
+      //alert(data?.message || '操作失败');
+      showMessage(data?.message || '操作失败', 'error');
     }
   } catch (e) {
-    alert('网络请求错误');
+    //alert('网络请求错误');
+    showMessage('网络请求错误', 'error');
   } finally {
     isSubmitting.value = false;
   }
@@ -735,7 +750,9 @@ const loadComments = async () => {
       comments.value = data.data || [];
     } else {
       comments.value = [];
-      if (data?.message) alert(data.message);
+      if (data?.message)
+        //alert(data.message);
+        showMessage(data.message, 'error');
     }
   } catch (e) {
     comments.value = [];
@@ -784,13 +801,16 @@ const handleCommentImageChange = async (event, targetId) => {
       body: formData
     });
     if (unauthorized) return;
-    if (!uploadData?.success) return alert(uploadData?.message || '图片上传失败');
+    if (!uploadData?.success)
+      //return alert(uploadData?.message || '图片上传失败');
+      return showMessage(uploadData?.message || '图片上传失败', 'error');
 
     const draft = getDraftByTargetId(targetId);
     draft.imageUrl = uploadData.imageUrl;
     draft.fileName = file.name;
   } catch (e) {
-    alert('评论图片上传失败');
+    //alert('评论图片上传失败');
+    showMessage('评论图片上传失败', 'error');
   } finally {
     event.target.value = '';
   }
@@ -804,19 +824,25 @@ const clearCommentDraftImage = (targetId) => {
 };
 
 const toggleReplyBox = (comment) => {
-  if (!isLoggedIn.value) return alert('请先登录后再回复');
+  if (!isLoggedIn.value)
+    //return alert('请先登录后再回复');
+    return showMessage('请先登录后再回复', 'error');
   // 同一时间只保留一个展开的回复框，避免长评论串里出现多个输入框。
   ensureReplyDraft(comment.id);
   activeReplyTargetId.value = activeReplyTargetId.value === comment.id ? null : comment.id;
 };
 
 const submitComment = async (replyTarget = null) => {
-  if (!isLoggedIn.value) return alert('请先登录后再评论');
+  if (!isLoggedIn.value)
+    //return alert('请先登录后再评论');
+    return showMessage('请先登录后再评论', 'error');
 
   // 主评论和回复共用一个提交流程，只通过 parentCommentId 区分层级。
   // 这能保证主评论和回复在校验、上传图片、异常处理上的行为完全一致。
   const draft = replyTarget ? getDraftByTargetId(replyTarget.id) : commentDraft.value;
-  if (!draft.content.trim() && !draft.imageUrl) return alert('评论内容和图片不能都为空');
+  if (!draft.content.trim() && !draft.imageUrl)
+    //return alert('评论内容和图片不能都为空');
+    return showMessage('评论内容和图片不能都为空', 'error');
 
   isCommentSubmitting.value = true;
   try {
@@ -849,17 +875,21 @@ const submitComment = async (replyTarget = null) => {
       // - 点赞数、排序结果也不会因为前端手工插入而出错
       await loadComments();
     } else {
-      alert(data?.message || '评论失败');
+      //alert(data?.message || '评论失败');
+      showMessage(data?.message || '评论失败', 'error');
     }
   } catch (e) {
-    alert('评论提交失败');
+    //alert('评论提交失败');
+    showMessage('评论提交失败', 'error');
   } finally {
     isCommentSubmitting.value = false;
   }
 };
 
 const likeComment = async (commentId) => {
-  if (!isLoggedIn.value) return alert('请先登录后再点赞');
+  if (!isLoggedIn.value)
+    //return alert('请先登录后再点赞');
+    return showMessage('请先登录后再点赞', 'error');
   try {
     const { data, unauthorized } = await fetchJson(`${API_BASE}/comments/${commentId}/like`, {
       method: 'POST',
@@ -872,10 +902,12 @@ const likeComment = async (commentId) => {
       updateCommentLikeState(comments.value, commentId, data.data.likeCount, data.data.likedByCurrentUser);
       triggerLikeAnimation(commentId);
     } else {
-      alert(data?.message || '点赞失败');
+      //alert(data?.message || '点赞失败');
+      showMessage(data?.message || '点赞失败', 'error');
     }
   } catch (e) {
-    alert('点赞失败');
+    //alert('点赞失败');
+    showMessage('点赞失败', 'error');
   }
 };
 
@@ -948,7 +980,8 @@ const startChatWithUser = (commentOrReply) => {
   const targetUserId = commentOrReply.publisherId || commentOrReply.userId;
 
   if (!targetUserId) {
-    alert('无法获取该用户信息');
+    //alert('无法获取该用户信息');
+    showMessage('无法获取该用户信息', 'error');
     return;
   }
 

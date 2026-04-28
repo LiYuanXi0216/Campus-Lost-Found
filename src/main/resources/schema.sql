@@ -154,3 +154,13 @@ CREATE TABLE `app_comment_like` (
                                     PRIMARY KEY (`user_id`, `comment_id`),
                                     INDEX `idx_comment_like_comment` (`comment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评论点赞关系表';
+
+CREATE TABLE `admin_log` (
+                             `id` bigint NOT NULL AUTO_INCREMENT,
+                             `admin_id` bigint NOT NULL COMMENT '执行操作的管理员ID',
+                             `action_type` varchar(50) NOT NULL COMMENT '操作类型(如: DELETE_POST)',
+                             `target_id` varchar(255) COMMENT '被操作的对象ID(如帖子ID)',
+                             `detail` text COMMENT '操作详情描述',
+                             `create_time` datetime NOT NULL COMMENT '操作时间',
+                             PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员操作审计日志';
