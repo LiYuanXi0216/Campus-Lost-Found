@@ -39,6 +39,9 @@ public class ItemPost {
     private java.time.LocalDateTime createTime;
     private String publisherId;
 
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String verifyQuestion;
+
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String verifyAnswer;
 }

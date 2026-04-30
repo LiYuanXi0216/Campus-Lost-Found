@@ -107,6 +107,17 @@
           <input type="text" class="zh-input" v-model="postForm.locationDesc" placeholder="详细位置 (如: 二楼自习室靠窗)" />
           <textarea class="zh-input" v-model="postForm.description" rows="3" placeholder="物品详细特征描述..."></textarea>
           <input type="text" class="zh-input" v-model="postForm.contact" placeholder="联系方式 (必填)" />
+
+          <div style="margin-bottom: 15px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #444; cursor: pointer;">
+              <input type="checkbox" v-model="useVerification" />
+              <span>开启问题验证保护联系方式 (选填)</span>
+            </label>
+            <div v-if="useVerification" class="verify-setup-box">
+              <input type="text" class="zh-input" v-model="postForm.verifyQuestion" placeholder="设置验证问题 (例：我的学号后四位是多少？)" style="margin-bottom: 10px; background: #fff;" />
+              <input type="text" class="zh-input" v-model="postForm.verifyAnswer" placeholder="设置验证答案 (必须完全匹配才能查看)" style="margin-bottom: 0; background: #fff;" />
+            </div>
+          </div>
           <input type="file" @change="handleFileChange" accept="image/*" class="file-input" />
           <button class="zh-btn zh-btn-primary zh-btn-block" @click="submitPost" :disabled="isSubmitting">
             {{ isSubmitting ? '处理中...' : '提交' }}
@@ -131,7 +142,29 @@
           <img v-if="currentPost.imageUrl" :src="currentPost.imageUrl" class="detail-image" />
           <p class="detail-desc">{{ currentPost.description }}</p>
           <div class="contact-box">
-            <strong>联系方式：</strong>{{ !isLoggedIn ? '需登录后查看' : (currentPost.contact || '未留联系方式') }}
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <strong>联系方式：</strong>
+              <template v-if="currentPost.contact">
+                <span style="font-size: 15px; color: #121212;">{{ currentPost.contact }}</span>
+              </template>
+              <template v-else-if="!isLoggedIn">
+                <span style="color: #8590a6; font-size: 14px;">需登录后查看</span>
+              </template>
+              <template v-else-if="currentPost.verifyQuestion">
+                <span class="tag tag-red" style="margin: 0;">🔒 隐私保护</span>
+              </template>
+              <template v-else>
+                <span style="color: #8590a6; font-size: 14px;">未留联系方式</span>
+              </template>
+            </div>
+
+            <div v-if="isLoggedIn && !currentPost.contact && currentPost.verifyQuestion" class="verify-unlock-box">
+              <div class="verify-q">❓ 问题：{{ currentPost.verifyQuestion }}</div>
+              <div style="display: flex; gap: 10px; margin-top: 12px;">
+                <input type="text" class="zh-input" v-model="verifyAnswerInput" placeholder="请输入答案解锁" style="margin: 0; flex: 1;" @keyup.enter="verifyContact" />
+                <button class="zh-btn zh-btn-primary" style="padding: 0 24px;" @click="verifyContact">验证</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -392,6 +425,8 @@ const isCommentSubmitting = ref(false);
 const isCommentLoading = ref(false);
 const currentPost = ref({});
 const selectedFile = ref(null);
+const useVerification = ref(false);  // 控制是否开启验证
+const verifyAnswerInput = ref('');   // 详情页用户输入的答案
 
 // 发帖表单：
 // - 新建帖子时，id = null
@@ -409,7 +444,9 @@ const postForm = ref({
   locationDesc: '',
   latitude: null,
   longitude: null,
-  imageUrl: ''
+  imageUrl: '',
+  verifyQuestion: '',
+  verifyAnswer: ''
 });
 
 // 评论区状态：
@@ -580,6 +617,7 @@ const closeDetailModal = () => {
   currentPost.value = {};
   recommendations.value = [];
   searchedRecs.value = false;
+  verifyAnswerInput.value = ''; // 清空答案草稿
   resetCommentUiState();
 };
 
@@ -616,6 +654,7 @@ const openPostModal = (post = null) => {
   // 传入 post 代表编辑，否则按新建帖子初始化表单。
   if (post) {
     postForm.value = { ...post };
+    useVerification.value = !!post.verifyQuestion; // 如果有验证问题，自动勾选
   } else {
     postForm.value = {
       id: null,
@@ -630,8 +669,11 @@ const openPostModal = (post = null) => {
       locationDesc: '',
       latitude: null,
       longitude: null,
-      imageUrl: ''
+      imageUrl: '',
+      verifyQuestion: '',
+      verifyAnswer: ''
     };
+    useVerification.value = false;
   }
   showModal.value = true;
 };
@@ -700,6 +742,10 @@ const submitPost = async () => {
     const method = postForm.value.id ? 'PUT' : 'POST';
     const url = postForm.value.id ? `${API_BASE}/posts/${postForm.value.id}` : `${API_BASE}/posts`;
     const payload = { ...postForm.value };
+    if (!useVerification.value) {
+      payload.verifyQuestion = null;
+      payload.verifyAnswer = null;
+    }
 
     // 这些字段允许为空；如果保留空字符串，后端和数据库层处理起来反而更麻烦。
     if (!payload.buildingId) payload.buildingId = null;
@@ -998,6 +1044,30 @@ const startChatWithUser = (commentOrReply) => {
     window.startChatWithUserId(targetUserId);
   }
 };
+
+// 🚀 新增：详情页点击验证按钮触发的逻辑
+const verifyContact = async () => {
+  if (!verifyAnswerInput.value.trim()) return showMessage('请输入答案', 'error');
+  try {
+    const { res, data, unauthorized } = await fetchJson(`${API_BASE}/posts/${currentPost.value.id}/verify`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ answer: verifyAnswerInput.value.trim() })
+    });
+    if (unauthorized) return;
+
+    if (data?.success) {
+      showMessage('验证成功！', 'success');
+      // 局部更新数据：填写真实联系方式，同时把问题置空（触发UI自动变回常规展示）
+      currentPost.value.contact = data.data;
+      currentPost.value.verifyQuestion = null;
+    } else {
+      showMessage(data?.message || '答案不正确', 'error');
+    }
+  } catch (e) {
+    showMessage('网络异常', 'error');
+  }
+};
 </script>
 
 <style scoped>
@@ -1152,4 +1222,8 @@ const startChatWithUser = (commentOrReply) => {
     margin-left: 0;
   }
 }
+
+.verify-setup-box { background: #f8f9fa; padding: 16px; border-radius: 4px; border: 1px solid #ebebeb; margin-top: 12px; }
+.verify-unlock-box { background: #fff; padding: 16px; border-radius: 4px; border: 1px dashed #056de8; margin-top: 12px; }
+.verify-q { font-size: 14px; font-weight: 600; color: #121212; }
 </style>

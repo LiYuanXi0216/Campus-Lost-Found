@@ -180,6 +180,8 @@ public class ItemPostService {
         if (updateData.getLocationDesc() != null) post.setLocationDesc(updateData.getLocationDesc());
         if (updateData.getLatitude() != null) post.setLatitude(updateData.getLatitude());
         if (updateData.getLongitude() != null) post.setLongitude(updateData.getLongitude());
+        post.setVerifyQuestion(updateData.getVerifyQuestion());
+        post.setVerifyAnswer(updateData.getVerifyAnswer());
 
         // 👉 更新进数据库前，再清洗一次（防止用户把 FOUND 改成了 LOST）
         cleanAndFillLocationData(post);

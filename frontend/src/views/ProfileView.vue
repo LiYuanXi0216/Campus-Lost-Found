@@ -118,6 +118,18 @@
             <input type="file" @change="handleFileChange" accept="image/*" style="margin-top:5px; width:100%;" />
           </div>
 
+          <div style="margin-top: 15px; border-top: 1px dashed #eee; pt: 15px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#056de8; cursor:pointer;">
+              <input type="checkbox" v-model="postForm._enableVerify" />
+              <span>设置/修改隐私验证问题</span>
+            </label>
+
+            <div v-if="postForm._enableVerify" style="margin-top:10px; background:#f8f9fa; padding:10px; border-radius:4px;">
+              <input type="text" class="zh-input" v-model="postForm.verifyQuestion" placeholder="新验证问题" style="margin-bottom:8px; background:#fff;" />
+              <input type="text" class="zh-input" v-model="postForm.verifyAnswer" placeholder="新验证答案" style="margin-bottom:0; background:#fff;" />
+            </div>
+          </div>
+
           <button class="zh-btn zh-btn-primary zh-btn-block" @click="submitEdit" :disabled="isSubmitting">{{ isSubmitting ? '保存中...' : '保存修改' }}</button>
         </div>
       </div>
@@ -214,7 +226,9 @@ const showDetail = (post) => {
 
 const openEditModal = (post) => {
   selectedFile.value = null; // 清空暂存文件
-  postForm.value = { ...post };
+  postForm.value = { ...post,
+    // 初始化勾选状态：如果原本就有问题，则默认展开
+    _enableVerify: !!post.verifyQuestion};
   showEditModal.value = true;
 };
 
@@ -229,6 +243,11 @@ const submitEdit = async () => {
       const uRes = await fetch(`${API_BASE}/files/upload`, { method: 'POST', headers: getHeaders(true), body: fd });
       const uData = await uRes.json();
       if (uData.success) { postForm.value.imageUrl = uData.imageUrl; if(uData.aiTags) postForm.value.description += '\n' + uData.aiTags; }
+    }
+
+    if (!postForm.value._enableVerify) {
+      postForm.value.verifyQuestion = null;
+      postForm.value.verifyAnswer = null;
     }
 
     const payload = { ...postForm.value };
