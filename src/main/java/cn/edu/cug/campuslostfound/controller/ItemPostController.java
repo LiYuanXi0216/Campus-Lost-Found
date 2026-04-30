@@ -4,6 +4,7 @@ import cn.edu.cug.campuslostfound.entity.ItemPost;
 import cn.edu.cug.campuslostfound.entity.PostSubscription;
 import cn.edu.cug.campuslostfound.service.ItemPostService;
 import cn.edu.cug.campuslostfound.service.SubscriptionService;
+import cn.edu.cug.campuslostfound.utils.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,7 +50,6 @@ public class ItemPostController {
 
     // API 4: 综合检索接口
     // 访问路径类似：http://localhost:8080/api/posts/search?type=LOST&keyword=黑色
-    // 🚀 修改原有的 search 接口，加入脱敏拦截
     @GetMapping("/search")
     public List<ItemPost> search(
             @RequestParam(required = false, defaultValue = "ALL") String type,
@@ -57,12 +57,25 @@ public class ItemPostController {
             @RequestParam(required = false) Long buildingId,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
-            HttpServletRequest request) { // 👈 记得接收 request 获取当前用户
+            HttpServletRequest request) { // 👈 新增 request 参数
 
         List<ItemPost> posts = service.searchPosts(type, keyword, buildingId, startDate, endDate);
 
-        // 执行脱敏
-        Long userId = (Long) request.getAttribute("currentUserId");
+        // ==========================================
+        // 🚨 核心修复：手动解析 Token 识别当前用户
+        // ==========================================
+        Long userId = null;
+        String token = request.getHeader("Authorization");
+        if (token != null && !token.isEmpty()) {
+            try {
+                // 解开令牌，拿到真实用户ID
+                userId = Long.valueOf(JwtUtils.parseToken(token).get("userId").toString());
+            } catch (Exception e) {
+                // Token 过期或无效，按游客处理，不报错
+            }
+        }
+
+        // 将真实用户ID传给脱敏中心
         service.sanitizePostList(posts, userId);
 
         return posts;

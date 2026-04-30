@@ -144,25 +144,25 @@
           <div class="contact-box">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
               <strong>联系方式：</strong>
+
               <template v-if="currentPost.contact">
                 <span style="font-size: 15px; color: #121212;">{{ currentPost.contact }}</span>
               </template>
+
               <template v-else-if="!isLoggedIn">
-                <span style="color: #8590a6; font-size: 14px;">需登录后查看</span>
+                <span style="color: #8590a6;">需登录后查看</span>
               </template>
+
               <template v-else-if="currentPost.verifyQuestion">
-                <span class="tag tag-red" style="margin: 0;">🔒 隐私保护</span>
-              </template>
-              <template v-else>
-                <span style="color: #8590a6; font-size: 14px;">未留联系方式</span>
+                <span class="tag tag-red">🔒 隐私保护 (需答题解锁)</span>
               </template>
             </div>
 
             <div v-if="isLoggedIn && !currentPost.contact && currentPost.verifyQuestion" class="verify-unlock-box">
               <div class="verify-q">❓ 问题：{{ currentPost.verifyQuestion }}</div>
               <div style="display: flex; gap: 10px; margin-top: 12px;">
-                <input type="text" class="zh-input" v-model="verifyAnswerInput" placeholder="请输入答案解锁" style="margin: 0; flex: 1;" @keyup.enter="verifyContact" />
-                <button class="zh-btn zh-btn-primary" style="padding: 0 24px;" @click="verifyContact">验证</button>
+                <input type="text" class="zh-input" v-model="verifyAnswerInput" placeholder="请输入答案" style="margin: 0; flex: 1;" @keyup.enter="verifyContact" />
+                <button class="zh-btn zh-btn-primary" @click="verifyContact">验证</button>
               </div>
             </div>
           </div>
@@ -427,6 +427,8 @@ const currentPost = ref({});
 const selectedFile = ref(null);
 const useVerification = ref(false);  // 控制是否开启验证
 const verifyAnswerInput = ref('');   // 详情页用户输入的答案
+// 拿到当前登录用户的 ID（从本地存储读取）
+const currentUser = ref(JSON.parse(localStorage.getItem('user')) || {});
 
 // 发帖表单：
 // - 新建帖子时，id = null
@@ -502,6 +504,20 @@ function syncLoginState() {
   // 这里只同步“当前是否登录”这个最小状态，
   // 具体用户信息仍由外层页面负责维护。
   isLoggedIn.value = !!localStorage.getItem('token');
+
+  // 消除灰色警告：实时更新当前用户信息
+  currentUser.value = JSON.parse(localStorage.getItem('user')) || {};
+
+  // ==========================================
+  // 🚨 核心修复 2：只要账号状态发生变化（登入/登出），
+  // 立刻重新拉取数据，洗掉内存里的脏数据！
+  // ==========================================
+  loadPosts();
+
+  // 如果详情弹窗正开着，强制关闭，防止别人看到上一任的信息
+  if (showDetailModal.value) {
+    closeDetailModal();
+  }
 }
 
 const getHeaders = (isUpload = false) => {
@@ -570,7 +586,9 @@ const loadPosts = async () => {
   if (searchQuery.value.endDate) params.append('endDate', searchQuery.value.endDate);
 
   try {
-    const res = await fetch(`${API_BASE}/posts/search?${params.toString()}`);
+    const res = await fetch(`${API_BASE}/posts/search?${params.toString()}`, {
+      headers: getHeaders()
+    });
     posts.value = await res.json();
   } catch (e) {
     console.error('帖子搜索失败', e);
@@ -1061,6 +1079,7 @@ const verifyContact = async () => {
       // 局部更新数据：填写真实联系方式，同时把问题置空（触发UI自动变回常规展示）
       currentPost.value.contact = data.data;
       currentPost.value.verifyQuestion = null;
+      currentPost.value._isUnlocked = true;
     } else {
       showMessage(data?.message || '答案不正确', 'error');
     }
