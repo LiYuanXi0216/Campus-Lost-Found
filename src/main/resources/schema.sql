@@ -164,3 +164,7 @@ CREATE TABLE `admin_log` (
                              `create_time` datetime NOT NULL COMMENT '操作时间',
                              PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员操作审计日志';
+
+ALTER TABLE `item_post`
+    ADD COLUMN `verify_question` varchar(255) DEFAULT NULL COMMENT '验证问题 (用于隐藏联系方式)',
+    ADD COLUMN `verify_answer` varchar(255) DEFAULT NULL COMMENT '验证答案';

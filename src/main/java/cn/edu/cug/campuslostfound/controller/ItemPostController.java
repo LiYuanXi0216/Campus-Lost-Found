@@ -49,14 +49,23 @@ public class ItemPostController {
 
     // API 4: 综合检索接口
     // 访问路径类似：http://localhost:8080/api/posts/search?type=LOST&keyword=黑色
+    // 🚀 修改原有的 search 接口，加入脱敏拦截
     @GetMapping("/search")
     public List<ItemPost> search(
             @RequestParam(required = false, defaultValue = "ALL") String type,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long buildingId,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
-        return service.searchPosts(type, keyword, buildingId, startDate, endDate);
+            @RequestParam(required = false) String endDate,
+            HttpServletRequest request) { // 👈 记得接收 request 获取当前用户
+
+        List<ItemPost> posts = service.searchPosts(type, keyword, buildingId, startDate, endDate);
+
+        // 执行脱敏
+        Long userId = (Long) request.getAttribute("currentUserId");
+        service.sanitizePostList(posts, userId);
+
+        return posts;
     }
 
     // API 5: 获取我发布的帖子 (GET 请求)
@@ -124,6 +133,24 @@ public class ItemPostController {
             subscriptionService.subscribe(userId, sub.getKeyword(), sub.getBuildingId());
             result.put("success", true);
             result.put("message", "订阅成功！有新匹配将邮件通知您。");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+
+    // 🚀 新增：验证答案接口
+    @PostMapping("/{id}/verify")
+    public Map<String, Object> verifyContact(@PathVariable Long id, @RequestBody Map<String, String> params) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String answer = params.get("answer");
+            String realContact = service.verifyAnswer(id, answer);
+            result.put("success", true);
+            result.put("data", realContact);
+            result.put("message", "验证成功");
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());

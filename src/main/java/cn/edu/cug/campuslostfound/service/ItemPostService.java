@@ -236,4 +236,35 @@ public class ItemPostService {
         wrapper.orderByDesc("create_time");
         return mapper.selectList(wrapper);
     }
+
+    // ==========================================
+    // 功能：列表数据脱敏 (隐藏非本人的联系方式和答案)
+    // ==========================================
+    public void sanitizePostList(List<ItemPost> posts, Long currentUserId) {
+        if (posts == null || posts.isEmpty()) return;
+        String uidStr = currentUserId != null ? currentUserId.toString() : null;
+
+        for (ItemPost post : posts) {
+            // 如果设置了验证问题
+            if (post.getVerifyQuestion() != null && !post.getVerifyQuestion().trim().isEmpty()) {
+                // 如果当前登录的不是发帖人本人
+                if (uidStr == null || !uidStr.equals(post.getPublisherId())) {
+                    post.setContact(null);       // 隐藏真实联系方式
+                    post.setVerifyAnswer(null);  // 绝对不能把答案下发给前端！
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // 功能：核对答案并返回真实联系方式
+    // ==========================================
+    public String verifyAnswer(Long postId, String answer) {
+        ItemPost post = mapper.selectById(postId);
+        if (post == null) throw new RuntimeException("帖子不存在");
+        if (post.getVerifyAnswer() == null || !post.getVerifyAnswer().trim().equalsIgnoreCase(answer.trim())) {
+            throw new RuntimeException("答案不正确，请重试！");
+        }
+        return post.getContact();
+    }
 }
