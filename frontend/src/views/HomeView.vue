@@ -145,24 +145,32 @@
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
               <strong>联系方式：</strong>
 
-              <template v-if="currentPost.contact">
-                <span style="font-size: 15px; color: #121212;">{{ currentPost.contact }}</span>
+              <template v-if="isLoggedIn && currentUser.id == currentPost.publisherId">
+                <span v-if="currentPost.contact" style="font-size: 15px; color: #121212;">{{ currentPost.contact }}</span>
+                <span v-else style="color: #8590a6; font-size: 14px;">(本人未留联系方式)</span>
               </template>
 
-              <template v-else-if="!isLoggedIn">
-                <span style="color: #8590a6;">需登录后查看</span>
-              </template>
-
-              <template v-else-if="currentPost.verifyQuestion">
-                <span class="tag tag-red">🔒 隐私保护 (需答题解锁)</span>
+              <template v-else>
+                <template v-if="!isLoggedIn">
+                  <span style="color: #8590a6; font-size: 14px;">需登录后查看</span>
+                </template>
+                <template v-else-if="currentPost.verifyQuestion && !currentPost._isUnlocked">
+                  <span class="tag tag-red" style="margin: 0;">🔒 隐私保护 (需答题解锁)</span>
+                </template>
+                <template v-else-if="currentPost.contact">
+                  <span style="font-size: 15px; color: #121212;">{{ currentPost.contact }}</span>
+                </template>
+                <template v-else>
+                  <span style="color: #8590a6; font-size: 14px;">未留联系方式</span>
+                </template>
               </template>
             </div>
 
-            <div v-if="isLoggedIn && !currentPost.contact && currentPost.verifyQuestion" class="verify-unlock-box">
+            <div v-if="isLoggedIn && currentUser.id != currentPost.publisherId && !currentPost._isUnlocked && currentPost.verifyQuestion" class="verify-unlock-box">
               <div class="verify-q">❓ 问题：{{ currentPost.verifyQuestion }}</div>
               <div style="display: flex; gap: 10px; margin-top: 12px;">
-                <input type="text" class="zh-input" v-model="verifyAnswerInput" placeholder="请输入答案" style="margin: 0; flex: 1;" @keyup.enter="verifyContact" />
-                <button class="zh-btn zh-btn-primary" @click="verifyContact">验证</button>
+                <input type="text" class="zh-input" v-model="verifyAnswerInput" placeholder="请输入答案解锁" style="margin: 0; flex: 1;" @keyup.enter="verifyContact" />
+                <button class="zh-btn zh-btn-primary" style="padding: 0 24px;" @click="verifyContact">验证</button>
               </div>
             </div>
           </div>

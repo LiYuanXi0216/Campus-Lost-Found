@@ -249,11 +249,13 @@ public class ItemPostService {
         for (ItemPost post : posts) {
             // 如果设置了验证问题
             if (post.getVerifyQuestion() != null && !post.getVerifyQuestion().trim().isEmpty()) {
-                // 如果当前登录的不是发帖人本人
-                if (uidStr == null || !uidStr.equals(post.getPublisherId())) {
-                    post.setContact(null);       // 隐藏真实联系方式
-                    post.setVerifyAnswer(null);  // 绝对不能把答案下发给前端！
+                // 核心修复：如果当前用户是发帖人本人，绝对不脱敏
+                if (uidStr != null && post.getPublisherId() != null && uidStr.equals(post.getPublisherId().trim())) {
+                    continue;
                 }
+                // 否则（游客或非本人），隐藏联系方式和答案
+                post.setContact(null);
+                post.setVerifyAnswer(null);
             }
         }
     }
