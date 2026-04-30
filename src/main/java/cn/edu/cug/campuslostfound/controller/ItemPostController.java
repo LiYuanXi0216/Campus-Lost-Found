@@ -4,6 +4,7 @@ import cn.edu.cug.campuslostfound.entity.ItemPost;
 import cn.edu.cug.campuslostfound.entity.PostSubscription;
 import cn.edu.cug.campuslostfound.service.ItemPostService;
 import cn.edu.cug.campuslostfound.service.SubscriptionService;
+import cn.edu.cug.campuslostfound.utils.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,8 +56,29 @@ public class ItemPostController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long buildingId,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
-        return service.searchPosts(type, keyword, buildingId, startDate, endDate);
+            @RequestParam(required = false) String endDate,
+            HttpServletRequest request) { // 👈 新增 request 参数
+
+        List<ItemPost> posts = service.searchPosts(type, keyword, buildingId, startDate, endDate);
+
+        // ==========================================
+        // 🚨 核心修复：手动解析 Token 识别当前用户
+        // ==========================================
+        Long userId = null;
+        String token = request.getHeader("Authorization");
+        if (token != null && !token.isEmpty()) {
+            try {
+                // 解开令牌，拿到真实用户ID
+                userId = Long.valueOf(JwtUtils.parseToken(token).get("userId").toString());
+            } catch (Exception e) {
+                // Token 过期或无效，按游客处理，不报错
+            }
+        }
+
+        // 将真实用户ID传给脱敏中心
+        service.sanitizePostList(posts, userId);
+
+        return posts;
     }
 
     // API 5: 获取我发布的帖子 (GET 请求)
@@ -124,6 +146,24 @@ public class ItemPostController {
             subscriptionService.subscribe(userId, sub.getKeyword(), sub.getBuildingId());
             result.put("success", true);
             result.put("message", "订阅成功！有新匹配将邮件通知您。");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+
+    // 🚀 新增：验证答案接口
+    @PostMapping("/{id}/verify")
+    public Map<String, Object> verifyContact(@PathVariable Long id, @RequestBody Map<String, String> params) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String answer = params.get("answer");
+            String realContact = service.verifyAnswer(id, answer);
+            result.put("success", true);
+            result.put("data", realContact);
+            result.put("message", "验证成功");
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());

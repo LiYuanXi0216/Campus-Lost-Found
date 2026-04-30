@@ -180,6 +180,8 @@ public class ItemPostService {
         if (updateData.getLocationDesc() != null) post.setLocationDesc(updateData.getLocationDesc());
         if (updateData.getLatitude() != null) post.setLatitude(updateData.getLatitude());
         if (updateData.getLongitude() != null) post.setLongitude(updateData.getLongitude());
+        post.setVerifyQuestion(updateData.getVerifyQuestion());
+        post.setVerifyAnswer(updateData.getVerifyAnswer());
 
         // 👉 更新进数据库前，再清洗一次（防止用户把 FOUND 改成了 LOST）
         cleanAndFillLocationData(post);
@@ -235,5 +237,38 @@ public class ItemPostService {
         // 推荐结果按时间倒序
         wrapper.orderByDesc("create_time");
         return mapper.selectList(wrapper);
+    }
+
+    // ==========================================
+    // 功能：列表数据脱敏 (隐藏非本人的联系方式和答案)
+    // ==========================================
+    public void sanitizePostList(List<ItemPost> posts, Long currentUserId) {
+        if (posts == null || posts.isEmpty()) return;
+        String uidStr = currentUserId != null ? currentUserId.toString() : null;
+
+        for (ItemPost post : posts) {
+            // 如果设置了验证问题
+            if (post.getVerifyQuestion() != null && !post.getVerifyQuestion().trim().isEmpty()) {
+                // 核心修复：如果当前用户是发帖人本人，绝对不脱敏
+                if (uidStr != null && post.getPublisherId() != null && uidStr.equals(post.getPublisherId().trim())) {
+                    continue;
+                }
+                // 否则（游客或非本人），隐藏联系方式和答案
+                post.setContact(null);
+                post.setVerifyAnswer(null);
+            }
+        }
+    }
+
+    // ==========================================
+    // 功能：核对答案并返回真实联系方式
+    // ==========================================
+    public String verifyAnswer(Long postId, String answer) {
+        ItemPost post = mapper.selectById(postId);
+        if (post == null) throw new RuntimeException("帖子不存在");
+        if (post.getVerifyAnswer() == null || !post.getVerifyAnswer().trim().equalsIgnoreCase(answer.trim())) {
+            throw new RuntimeException("答案不正确，请重试！");
+        }
+        return post.getContact();
     }
 }

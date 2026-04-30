@@ -1,12 +1,12 @@
 <template>
-  <div id="app">
+  <div id="app" :class="{ 'simple-mode-active': isSimpleMode }">
     <header class="zh-header">
       <div class="zh-header-inner">
-        <h1 class="zh-logo">Campus Lost&Found</h1>
+        <h1 class="zh-logo" @click="activeTab = 'home'" style="cursor: pointer;">Campus Lost&Found</h1>
+
         <nav class="zh-nav">
           <a :class="{ active: activeTab === 'home' }" @click="activeTab = 'home'">首页大厅</a>
 
-          <!-- 👇 新增 聊天入口（登录后显示） -->
           <a v-if="isLoggedIn" :class="{ active: activeTab === 'chat' }" @click="activeTab = 'chat'">
             消息聊天
           </a>
@@ -14,9 +14,15 @@
           <a v-if="isLoggedIn" :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">
             个人中心 <span v-if="unreadCount > 0" class="red-dot"></span>
           </a>
+
           <a v-if="isAdmin" :class="{ active: activeTab === 'admin' }" @click="activeTab = 'admin'">管理后台</a>
         </nav>
+
         <div class="zh-auth">
+          <button class="zh-btn zh-btn-outline mode-toggle" @click="toggleMode">
+            {{ isSimpleMode ? '切换到：标准模式' : '切换到：简洁模式' }}
+          </button>
+
           <template v-if="isLoggedIn">
             <span class="greeting">你好，{{ currentUser.nickname }}</span>
             <button class="zh-btn zh-btn-outline" @click="doLogout">退出</button>
@@ -29,12 +35,15 @@
     </header>
 
     <main class="zh-main">
-      <HomeView v-if="activeTab === 'home'" />
+      <template v-if="activeTab === 'home'">
+        <SimpleHomeView v-if="isSimpleMode" />
+        <HomeView v-else />
+      </template>
 
-      <!-- 👇 新增聊天页面 -->
       <ChatView v-if="activeTab === 'chat'" />
 
       <ProfileView v-if="activeTab === 'profile'" @update-unread="fetchUnreadCount" />
+
       <AdminView v-if="activeTab === 'admin'" />
     </main>
 
@@ -68,6 +77,7 @@
         </div>
       </div>
     </div>
+
     <Toast ref="toastRef" />
     <Confirm ref="confirmRef" />
   </div>
@@ -82,6 +92,7 @@ import Confirm from './components/Confirm.vue'; // 👉 新增导入
 import HomeView from './views/HomeView.vue';
 import ProfileView from './views/ProfileView.vue';
 import AdminView from './views/AdminView.vue';
+import SimpleHomeView from './views/SimpleHomeView.vue'; // 引入新视图
 
 // 👇 导入聊天页面
 import ChatView from './views/ChatView.vue';
@@ -96,6 +107,7 @@ const showAuthModal = ref(false);
 const isRegisterMode = ref(false);
 const authForm = ref({ username: '', password: '', email: '', code: '', nickname: '' });
 const isAdmin = ref(false);
+const isSimpleMode = ref(localStorage.getItem('mode') === 'simple');
 
 // ====== 新增：全局 Toast 控制逻辑 ======
 const toastRef = ref(null);
@@ -222,6 +234,15 @@ const handleAuthAction = async () => {
 window.switchToChatTab = () => {
   activeTab.value = 'chat';
 };
+
+const toggleMode = () => {
+  isSimpleMode.value = !isSimpleMode.value;
+  localStorage.setItem('mode', isSimpleMode.value ? 'simple' : 'standard');
+  // 切换模式后，给用户一个丝滑的提示
+  onShowMsg(`已切换到${isSimpleMode.value ? '简洁' : '标准'}模式`, 'success');
+};
+
+provide('isSimpleMode', isSimpleMode); // 提供给子组件使用
 </script>
 
 <style>
@@ -290,4 +311,8 @@ input[type="date"].zh-input::-webkit-calendar-picker-indicator {
 input[type="date"].zh-input:focus::-webkit-calendar-picker-indicator {
   opacity: 1;
 }
+
+/* 全局控制：如果处于简洁模式，整体字号变大，颜色对比度更高 */
+.simple-mode-active { font-size: 18px !important; }
+.mode-toggle { margin-right: 15px; border-color: #056de8; color: #056de8; font-weight: bold; }
 </style>

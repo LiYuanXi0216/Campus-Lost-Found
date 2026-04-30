@@ -36,16 +36,12 @@ public class ItemPost {
     @TableField(updateStrategy = FieldStrategy.IGNORED) // 💡 重点：不管是不是 null，都强行更新到数据库
     private Double longitude;
 
-
-
-
     private java.time.LocalDateTime createTime;
     private String publisherId;
 
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String verifyQuestion;
 
-
-
-
-
-
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
+    private String verifyAnswer;
 }
