@@ -4,6 +4,7 @@ import cn.edu.cug.campuslostfound.entity.ChatMessage;
 import cn.edu.cug.campuslostfound.entity.ChatSession;
 import cn.edu.cug.campuslostfound.service.ChatMessageService;
 import cn.edu.cug.campuslostfound.service.ChatSessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

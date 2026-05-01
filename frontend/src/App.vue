@@ -61,7 +61,14 @@
             <input type="email" class="zh-input" v-model="authForm.email" placeholder="邮箱" />
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
               <input type="text" class="zh-input" v-model="authForm.code" placeholder="验证码" style="margin-bottom:0;" />
-              <button class="zh-btn zh-btn-outline" @click="sendCode">获取验证码</button>
+              <button
+                  class="zh-btn zh-btn-outline"
+                  @click="sendCode"
+                  :disabled="codeCountdown > 0"
+                  :style="{ opacity: codeCountdown > 0 ? 0.6 : 1 }"
+              >
+                {{ codeCountdown > 0 ? `${codeCountdown} s` : '获取验证码' }}
+              </button>
             </div>
             <input type="text" class="zh-input" v-model="authForm.nickname" placeholder="昵称" />
           </template>
@@ -108,6 +115,7 @@ const isRegisterMode = ref(false);
 const authForm = ref({ username: '', password: '', email: '', code: '', nickname: '' });
 const isAdmin = ref(false);
 const isSimpleMode = ref(localStorage.getItem('mode') === 'simple');
+const codeCountdown = ref(0);//验证码发送倒计时变量
 
 // ====== 新增：全局 Toast 控制逻辑 ======
 const toastRef = ref(null);
@@ -182,6 +190,22 @@ const doLogout = () => {
 
 const sendCode = async () => {
   if (!authForm.value.email) return onShowMsg('请先填写邮箱', 'error');
+  if (codeCountdown.value > 0) return;
+
+  // ==============================
+  // 👇 【关键修改】点击后立即开始倒计时！
+  // ==============================
+  codeCountdown.value = 60;
+  const timer = setInterval(() => {
+    codeCountdown.value--;
+    if (codeCountdown.value <= 0) {
+      clearInterval(timer);
+    }
+  }, 1000);
+
+  // ==============================
+  // 然后再发送网络请求
+  // ==============================
   try {
     const res = await fetch(`${API_BASE}/users/send-code`, {
       method: 'POST',
@@ -189,8 +213,22 @@ const sendCode = async () => {
       body: JSON.stringify({ email: authForm.value.email })
     });
     const data = await res.json();
-    onShowMsg(data.message, data.success ? 'success' : 'error');
+
+    if (data.success) {
+      onShowMsg('验证码发送成功！', 'success');
+    } else {
+      // ==============================
+      // 👇 如果发送失败，把倒计时重置回来
+      // ==============================
+      codeCountdown.value = 0;
+      clearInterval(timer);
+      onShowMsg(data.message, 'error');
+    }
   } catch (e) {
+    // ==============================
+    // 👇 网络错误也重置倒计时
+    // ==============================
+    codeCountdown.value = 0;
     onShowMsg('验证码发送失败', 'error');
   }
 };

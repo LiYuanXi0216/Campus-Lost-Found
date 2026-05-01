@@ -99,4 +99,9 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
         message.setIsRead(1);
         this.updateById(message);
     }
-}
+    // 👇 新增：管理员获取所有私信
+    @Override
+    public List<ChatMessage> getAllMessages() {
+        return this.list(); // MyBatis-Plus 自带的查询所有
+    }
+    }

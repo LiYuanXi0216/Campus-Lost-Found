@@ -87,6 +87,43 @@
           </div>
         </div>
       </div>
+
+      <!-- 在 <div class="admin-layout"> 里新增这个面板 -->
+      <div class="zh-card main-panel" style="margin-top: 15px;">
+        <div class="panel-header">
+          <h2 class="panel-title">用户私信管理</h2>
+          <div class="panel-actions">
+            <button class="zh-btn zh-btn-outline" @click="fetchMessages">刷新私信</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="zh-table">
+            <thead>
+            <tr>
+              <th width="60">私信ID</th>
+              <th width="100">发送者ID</th>
+              <th width="100">接收者ID</th>
+              <th>私信内容</th>
+              <th width="150">发送时间</th>
+              <th width="80">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="messages.length === 0"><td colspan="6" class="empty-state">暂无私信数据</td></tr>
+            <tr v-for="msg in messages" :key="msg.id">
+              <td class="text-gray">{{ msg.id }}</td>
+              <td class="text-gray">{{ msg.senderId }}</td>
+              <td class="text-gray">{{ msg.receiverId }}</td>
+              <td class="td-title">{{ msg.content }}</td>
+              <td class="text-gray">{{ formatDate(msg.sendTime) }}</td>
+              <td>
+                <a class="action-link text-danger" @click="deleteMessage(msg.id)">删除</a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -99,6 +136,9 @@ const API_BASE = 'http://localhost:8080/api';
 const showMessage = inject('showMessage');
 const showConfirm = inject('showConfirm');
 
+// ==============================
+// 👇 原有代码（保持不动）
+// ==============================
 const stats = ref({});
 const posts = ref([]);
 const logs = ref([]);
@@ -109,8 +149,20 @@ const getHeaders = () => ({
   'Content-Type': 'application/json'
 });
 
+// ==============================
+// 👇 【新增代码 1/3】在这里加私信的 ref
+// ==============================
+const messages = ref([]);
+
+// ==============================
+// 👇 原有代码（保持不动）
+// ==============================
 onMounted(() => {
   fetchDashboardData();
+  // ==============================
+  // 👇 【新增代码 2/3】在这里加调用
+  // ==============================
+  fetchMessages();
 });
 
 // 聚合拉取大盘数据
@@ -129,12 +181,12 @@ const fetchStats = async () => {
   } catch (e) {}
 };
 
-// 2. 拉取全站帖子 (复用现有的搜索接口，默认拉取全部)
+// 2. 拉取全站帖子
 const fetchPosts = async () => {
   try {
     const res = await fetch(`${API_BASE}/posts/search?type=ALL`, { headers: getHeaders() });
     posts.value = await res.json();
-    selectedPostIds.value = []; // 刷新后清空选中状态
+    selectedPostIds.value = [];
   } catch (e) {}
 };
 
@@ -147,8 +199,47 @@ const fetchLogs = async () => {
   } catch (e) {}
 };
 
-// --- 表格交互逻辑 ---
+// ==============================
+// 👇 【新增代码 3/3】在这里加私信的函数
+// ==============================
+// 拉取所有私信
+const fetchMessages = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/admin/messages`, { headers: getHeaders() });
+    const data = await res.json(); // 现在返回的是带 success 的结构
+    if (data.success) {
+      messages.value = data.data; // 取 data 字段
+    }
+  } catch (e) {}
+};
 
+// 删除私信
+const deleteMessage = async (msgId) => {
+  const isConfirmed = await showConfirm(`确认删除这条私信吗？将通知发送者和接收者。`, '私信删除确认');
+  if (!isConfirmed) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/messages/${msgId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await res.json(); // 现在返回的是带 success 的结构
+    if (data.success) {
+      showMessage(data.message, 'success'); // 直接用后端返回的 message
+      fetchMessages();
+      fetchLogs(); // 可选：顺便刷新审计日志
+    } else {
+      showMessage(data.message, 'error');
+    }
+  } catch (e) {
+    showMessage('网络错误', 'error');
+  }
+};
+
+// ==============================
+// 👇 原有代码（保持不动）
+// ==============================
+// --- 表格交互逻辑 ---
 const isAllSelected = computed(() => {
   return posts.value.length > 0 && selectedPostIds.value.length === posts.value.length;
 });
@@ -163,13 +254,11 @@ const toggleSelectAll = (e) => {
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
-  return dateStr.replace('T', ' ').substring(0, 16); // 去除毫秒，格式化为 YYYY-MM-DD HH:mm
+  return dateStr.replace('T', ' ').substring(0, 16);
 };
 
 // --- 核心特权操作逻辑 ---
-
 const deletePost = async (id) => {
-  //if (!confirm(`高危操作：确认强制删除帖子 ID [${id}] 吗？该操作将被记入审计日志！`)) return;
   const isConfirmed = await showConfirm(`高危操作：确认强制删除帖子 ID [${id}] 吗？该操作将被记入审计日志！`, '管理员操作确认');
   if (!isConfirmed) return;
   try {
@@ -179,23 +268,18 @@ const deletePost = async (id) => {
     });
     const data = await res.json();
     if (data.success) {
-      // alert('删除成功！');
       showMessage('删除成功！', 'success');
-      fetchDashboardData(); // 刷新三大板块：统计、列表、日志
+      fetchDashboardData();
     } else {
-      //alert(data.message);
       showMessage(data.message, 'error');
     }
-  } catch (e)
-  {
-    //alert('网络错误');
+  } catch (e) {
     showMessage('网络错误', 'error');
   }
 };
 
 const batchDelete = async () => {
   if (selectedPostIds.value.length === 0) return;
-  //if (!confirm(`高危操作：确认批量删除选中的 ${selectedPostIds.value.length} 条帖子吗？`)) return;
   const isConfirmed = await showConfirm(`高危操作：确认批量删除选中的 ${selectedPostIds.value.length} 条帖子吗？`, '批量删除确认');
   if (!isConfirmed) return;
   try {
@@ -206,15 +290,12 @@ const batchDelete = async () => {
     });
     const data = await res.json();
     if (data.success) {
-      //alert('批量删除成功！');
       showMessage('批量删除成功！', 'success');
       fetchDashboardData();
     } else {
-      //alert(data.message);
       showMessage(data.message, 'error');
     }
   } catch (e) {
-    //alert('网络错误');
     showMessage('网络错误', 'error');
   }
 };
