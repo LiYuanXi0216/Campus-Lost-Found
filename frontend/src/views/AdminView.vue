@@ -522,4 +522,5 @@ const batchDelete = async () => {
 .zh-btn-danger { background: #f1403c; color: #fff; }
 .zh-btn-danger:hover:not(:disabled) { background: #d93a36; }
 .zh-btn-danger:disabled { background: #f9c4c3; cursor: not-allowed; }
+
 </style>
