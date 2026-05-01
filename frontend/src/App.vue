@@ -353,4 +353,5 @@ input[type="date"].zh-input:focus::-webkit-calendar-picker-indicator {
 /* 全局控制：如果处于简洁模式，整体字号变大，颜色对比度更高 */
 .simple-mode-active { font-size: 18px !important; }
 .mode-toggle { margin-right: 15px; border-color: #056de8; color: #056de8; font-weight: bold; }
+
 </style>
