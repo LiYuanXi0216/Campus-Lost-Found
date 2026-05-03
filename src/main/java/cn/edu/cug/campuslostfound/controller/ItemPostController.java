@@ -27,11 +27,18 @@ public class ItemPostController {
 
     // API 1: 发布帖子 (使用 POST 请求)
     @PostMapping
-    public ItemPost create(@RequestBody ItemPost post, HttpServletRequest request) {
-        // 从请求中取出保安存入的 ID
-        Long userId = (Long) request.getAttribute("currentUserId");
-        // @RequestBody 会自动把前端传来的 JSON 数据转换成 ItemPost 对象
-        return service.createPost(post, userId);
+    public Map<String, Object> create(@RequestBody ItemPost post, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            Long userId = (Long) request.getAttribute("currentUserId");
+            ItemPost newPost = service.createPost(post, userId);
+            result.put("success", true);
+            result.put("data", newPost);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
     }
 
     // API 2: 浏览所有帖子 (使用 GET 请求)

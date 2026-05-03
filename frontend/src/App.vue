@@ -189,7 +189,10 @@ const doLogout = () => {
 };
 
 const sendCode = async () => {
-  if (!authForm.value.email) return onShowMsg('请先填写邮箱', 'error');
+  const email = authForm.value.email?.trim();
+  if (!email) return onShowMsg('请先填写邮箱', 'error');
+  if (!/^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email))
+    return onShowMsg('邮箱格式不正确', 'error');
   if (codeCountdown.value > 0) return;
 
   // ==============================
@@ -210,7 +213,7 @@ const sendCode = async () => {
     const res = await fetch(`${API_BASE}/users/send-code`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: authForm.value.email })
+      body: JSON.stringify({ email: authForm.value.email.trim() })
     });
     const data = await res.json();
 
@@ -234,6 +237,29 @@ const sendCode = async () => {
 };
 
 const handleAuthAction = async () => {
+  // 客户端预校验
+  const username = authForm.value.username?.trim();
+  const password = authForm.value.password?.trim();
+
+  if (!username) return onShowMsg('账号不能为空！', 'error');
+  if (!password) return onShowMsg('密码不能为空！', 'error');
+
+  if (isRegisterMode.value) {
+    const email = authForm.value.email?.trim();
+    const code = authForm.value.code?.trim();
+
+    if (!email) return onShowMsg('邮箱不能为空！', 'error');
+    if (!/^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email))
+      return onShowMsg('邮箱格式不正确', 'error');
+    if (!code) return onShowMsg('验证码不能为空！', 'error');
+    if (username.length < 3 || username.length > 20)
+      return onShowMsg('账号长度需在 3~20 个字符之间！', 'error');
+    if (!/^[a-zA-Z0-9_]+$/.test(username))
+      return onShowMsg('账号只能包含字母、数字和下划线！', 'error');
+    if (password.length < 6)
+      return onShowMsg('密码长度至少为 6 位！', 'error');
+  }
+
   const url = isRegisterMode.value ? `${API_BASE}/users/register` : `${API_BASE}/users/login`;
   try {
     const res = await fetch(url, {

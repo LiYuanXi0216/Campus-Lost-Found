@@ -152,6 +152,7 @@ const getLocation = () => {
 };
 
 const submitQuickPost = async () => {
+  if (!localStorage.getItem('token')) return showMessage('请先登录！', 'error');
   const file = fileInput.value?.files[0];
   if (!file) return showMessage('请先拍摄或上传一张照片', 'error');
 
@@ -190,13 +191,16 @@ const submitQuickPost = async () => {
       },
       body: JSON.stringify(payload)
     });
+    const data = await res.json();
 
-    if (res.ok || (await res.json()).success) {
+    if (data.success) {
       showMessage('✅ 发布成功！您可以直接拍摄下一件物品', 'success');
       // 沉浸式连发：不关闭弹窗，只清空上一张照片
       resetForm();
       // 后台静默刷新列表，等用户关掉弹窗时就能看到了
       fetchPosts();
+    } else {
+      showMessage(data.message || '发布失败', 'error');
     }
   } catch (e) {
     showMessage('发布失败，请检查网络或重新上传', 'error');

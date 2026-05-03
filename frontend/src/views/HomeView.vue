@@ -575,7 +575,7 @@ const loadBuildings = async () => {
   // 建筑字典用于：
   // 1. 搜索条件里的区域选择
   // 2. 发帖时选择建筑
-  // 3. 帖子列表 / 详情把 buildingId 翻译成人类可读名称
+  // 3. 帖子列表 / 详情把 buildingId 翻译成可读名称
   try {
     const res = await fetch(`${API_BASE}/buildings`);
     buildings.value = await res.json();
@@ -747,6 +747,26 @@ const autoGetLocation = (event) => {
 };
 
 const submitPost = async () => {
+  // 客户端预校验
+  if (!postForm.value.type || (postForm.value.type !== 'LOST' && postForm.value.type !== 'FOUND')) {
+    return showMessage('请选择帖子类型：寻物 或 招领！', 'error');
+  }
+  if (!postForm.value.title?.trim()) {
+    return showMessage('标题不能为空！', 'error');
+  }
+  if (!postForm.value.description?.trim()) {
+    return showMessage('物品描述不能为空！', 'error');
+  }
+  if (!postForm.value.contact?.trim()) {
+    return showMessage('联系方式不能为空！', 'error');
+  }
+  if (useVerification.value) {
+    if (!postForm.value.verifyQuestion?.trim())
+      return showMessage('验证问题不能为空！', 'error');
+    if (!postForm.value.verifyAnswer?.trim())
+      return showMessage('验证答案不能为空！', 'error');
+  }
+
   isSubmitting.value = true;
   try {
   // 先上传图片，再把返回的 URL 拼进帖子 payload，保持后端接口简单。
@@ -785,7 +805,7 @@ const submitPost = async () => {
     });
     if (unauthorized) return;
 
-    const success = res.ok || !!data?.success;
+    const success = !!data?.success;
     if (success) {
       //alert('操作成功！');
       showMessage('操作成功！', 'success');
