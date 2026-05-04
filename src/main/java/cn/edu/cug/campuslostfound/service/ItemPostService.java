@@ -49,15 +49,30 @@ public class ItemPostService {
 
     // 业务功能 1：发布帖子
     public ItemPost createPost(ItemPost post, Long userId) {
+
+        // 1. 校验帖子类型
+        if (post.getType() == null || (!post.getType().equals("LOST") && !post.getType().equals("FOUND"))) {
+            throw new RuntimeException("请选择帖子类型：寻物 或 招领！");
+        }
+
+        // 2. 校验标题不为空
+        if (post.getTitle() == null || post.getTitle().trim().isEmpty()) {
+            throw new RuntimeException("标题不能为空！");
+        }
+
+        // 3. 校验描述不为空
+        if (post.getDescription() == null || post.getDescription().trim().isEmpty()) {
+            throw new RuntimeException("物品描述不能为空！");
+        }
+
+        // 4. 校验联系方式不为空
+        if (post.getContact() == null || post.getContact().trim().isEmpty()) {
+            throw new RuntimeException("联系方式不能为空！");
+        }
+
         post.setCreateTime(java.time.LocalDateTime.now());
         post.setPublisherId(userId.toString());
         if (post.getItemStatus() == null) post.setItemStatus("PENDING");
-
-        // 逻辑优化：如果是寻物(LOST)，强制清空经纬度，防止误导
-        if ("LOST".equals(post.getType())) {
-            post.setLatitude(null);
-            post.setLongitude(null);
-        }
 
         // 👉 插入前，清洗一下空间数据
         cleanAndFillLocationData(post);

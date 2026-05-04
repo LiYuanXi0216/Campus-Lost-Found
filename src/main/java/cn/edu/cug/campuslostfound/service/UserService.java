@@ -33,37 +33,73 @@ public class UserService {
     // 功能 1：用户注册 (带邮箱验证码功能)
     public User register(User user) {
 
-        // 确保前端传了邮箱和验证码，并且调用 emailService 验证通过
-        if (user.getEmail() == null || user.getCode() == null ||
-                !emailService.verifyCode(user.getEmail(), user.getCode())) {
-            throw new RuntimeException("验证码错误或已过期，请重新获取！");
+        // 1. 先检查必填项是否为空（最先检查，避免浪费后续校验资源）
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new RuntimeException("账号不能为空！");
+        }
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            throw new RuntimeException("密码不能为空！");
+        }
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            throw new RuntimeException("邮箱不能为空！");
+        }
+        if (user.getCode() == null || user.getCode().trim().isEmpty()) {
+            throw new RuntimeException("验证码不能为空！");
         }
 
-        // 1. 检查账号是否已经存在
+        // 2. 校验账号格式：3~20 个字符，只允许字母、数字、下划线
+        String username = user.getUsername().trim();
+        if (username.length() < 3 || username.length() > 20) {
+            throw new RuntimeException("账号长度需在 3~20 个字符之间！");
+        }
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            throw new RuntimeException("账号只能包含字母、数字和下划线！");
+        }
+
+        // 3. 校验密码长度：至少 6 位
+        String password = user.getPassword().trim();
+        if (password.length() < 6) {
+            throw new RuntimeException("密码长度至少为 6 位！");
+        }
+
+        // 4. 校验邮箱格式
+        String email = user.getEmail().trim();
+        if (!email.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
+            throw new RuntimeException("邮箱格式不正确！");
+        }
+
+        // 5. 检查账号是否已经存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("username", user.getUsername());
+        queryWrapper.eq("username", username);
         if (userMapper.selectCount(queryWrapper) > 0) {
             throw new RuntimeException("该账号已被注册！");
         }
 
-        // 2. 检查这个邮箱是不是已经被别人注册过了
+        // 6. 检查这个邮箱是不是已经被别人注册过了
         QueryWrapper<User> emailQuery = new QueryWrapper<>();
-        emailQuery.eq("email", user.getEmail());
+        emailQuery.eq("email", email);
         if (userMapper.selectCount(emailQuery) > 0) {
             throw new RuntimeException("该邮箱已经被注册过了！");
         }
 
-        // 3. 密码加密 (MD5) -> 即使数据库被盗，黑客也看不到原密码
-        String md5Password = DigestUtils.md5DigestAsHex(user.getPassword().getBytes());
-        user.setPassword(md5Password);
+        // 7. 最后校验验证码（验证码是一次性的，放最后避免浪费）
+        if (!emailService.verifyCode(email, user.getCode().trim())) {
+            throw new RuntimeException("验证码错误或已过期，请重新获取！");
+        }
 
-        // 4. 设置默认属性
-        if (user.getNickname() == null) {
+        // 8. 密码加密 (MD5)
+        String md5Password = DigestUtils.md5DigestAsHex(password.getBytes());
+        user.setUsername(username);
+        user.setPassword(md5Password);
+        user.setEmail(email);
+
+        // 9. 设置默认属性
+        if (user.getNickname() == null || user.getNickname().trim().isEmpty()) {
             user.setNickname("校园用户_" + System.currentTimeMillis() % 10000);
         }
-        user.setRole("USER"); // 默认都是普通用户
+        user.setRole("USER");
 
-        // 5. 保存到数据库
+        // 10. 保存到数据库
         userMapper.insert(user);
 
         // 为了安全，返回给前端的对象里把密码清空
@@ -74,14 +110,22 @@ public class UserService {
     // 功能 2：用户登录
     // 核心修改：将 username 参数改名为 account，代表它可以是账号也可以是邮箱
     public User login(String account, String password) {
-        String md5Password = DigestUtils.md5DigestAsHex(password.getBytes());
 
+        if (account == null || account.trim().isEmpty()) {
+            throw new RuntimeException("账号/邮箱不能为空！");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            throw new RuntimeException("密码不能为空！");
+        }
+
+        String md5Password = DigestUtils.md5DigestAsHex(password.trim().getBytes());
+
+        String trimmedAccount = account.trim();
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        // 💡 重点：使用 and() 嵌套 or() 逻辑
         queryWrapper.and(wrapper -> wrapper
-                .eq("username", account)
+                .eq("username", trimmedAccount)
                 .or()
-                .eq("email", account)
+                .eq("email", trimmedAccount)
         );
         queryWrapper.eq("password", md5Password);
 
