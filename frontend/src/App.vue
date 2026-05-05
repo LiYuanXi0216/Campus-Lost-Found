@@ -269,7 +269,16 @@ const handleAuthAction = async () => {
 };
 
 // 👇 新增：暴露一个全局方法，让 HomeView 可以直接调用切换标签
+// 👇 带登录拦截的安全版：只有登录才能跳转到聊天
 window.switchToChatTab = () => {
+  // 先判断是否登录
+  if (!isLoggedIn.value) {
+    onShowMsg('请先登录', 'error');  // 弹出提示
+    showAuthModal.value = true;      // 可选：自动打开登录框（不要可以删掉）
+    return;                          // 拦截，不跳转
+  }
+
+  // 已登录 → 正常跳转
   activeTab.value = 'chat';
 };
 
